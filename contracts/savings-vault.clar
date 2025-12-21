@@ -18,6 +18,7 @@
 (define-data-var early-withdrawal-penalty uint u100) ;; 1% default
 (define-data-var contract-paused bool false)
 (define-data-var vault-nonce uint u0)
+(define-data-var min-deposit uint u1)
 
 ;; Vault data
 (define-map vaults uint {
@@ -72,11 +73,19 @@
   )
 )
 
+(define-public (set-min-deposit (amount uint))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-unauthorized)
+    (asserts! (> amount u0) err-invalid-amount)
+    (ok (var-set min-deposit amount))
+  )
+)
+
 ;; Vault lifecycle
 (define-public (create-vault (initial-deposit uint) (lock-period uint))
   (begin
     (asserts! (not (var-get contract-paused)) err-paused)
-    (asserts! (> initial-deposit u0) err-invalid-amount)
+    (asserts! (>= initial-deposit (var-get min-deposit)) err-invalid-amount)
     (asserts! (is-valid-lock-period lock-period) err-invalid-lock-period)
     (let
       (
@@ -118,7 +127,7 @@
     (asserts! (not (var-get contract-paused)) err-paused)
     (asserts! (is-eq tx-sender owner) err-unauthorized)
     (asserts! (is-eq status "active") err-unauthorized)
-    (asserts! (> amount u0) err-invalid-amount)
+    (asserts! (>= amount (var-get min-deposit)) err-invalid-amount)
     (try! (contract-call? token-contract transfer amount tx-sender (as-contract tx-sender) none))
     (map-set vaults vault-id (merge vault { balance: (+ balance amount) }))
     (print {event: "deposit", vault-id: vault-id, amount: amount, new-balance: (+ balance amount)})
