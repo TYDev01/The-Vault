@@ -15,6 +15,16 @@ export default function Home() {
   const [baseUrl, setBaseUrl] = useState<string | null>(null);
   const parsedAmount = Number(amount.replace(/,/g, ""));
   const estimatedPenalty = Number.isFinite(parsedAmount) ? Math.round(parsedAmount * 0.08) : null;
+  const vaults = [
+    { name: "Focus Fund", amount: 8200, unlock: "90 days", status: "On track" },
+    { name: "Voyage Buffer", amount: 3450, unlock: "21 days", status: "Near unlock" },
+    { name: "Launch Reserve", amount: 12000, unlock: "180 days", status: "Locked" }
+  ];
+  const totalLocked = vaults.reduce((sum, vault) => sum + vault.amount, 0);
+  const vaultStatuses = ["All", "On track", "Near unlock", "Locked"];
+  const [vaultFilter, setVaultFilter] = useState("All");
+  const visibleVaults =
+    vaultFilter === "All" ? vaults : vaults.filter((vault) => vault.status === vaultFilter);
   const activity = [
     { type: "Deposit", vault: "Focus Fund", amount: "4,200 STX", time: "2h ago" },
     { type: "Withdrawal", vault: "Voyage Buffer", amount: "1,200 STX", time: "1d ago" },
@@ -203,17 +213,35 @@ export default function Home() {
         <div>
           <p className="label">Vault inventory</p>
           <h2 className="section-title">Your active vaults</h2>
+          <div className="vault-metrics">
+            <div>
+              <p className="card-kicker">Total locked</p>
+              <p className="card-value">{totalLocked.toLocaleString()} STX</p>
+            </div>
+            <div>
+              <p className="card-kicker">Vault count</p>
+              <p className="card-value">{vaults.length}</p>
+            </div>
+          </div>
+        </div>
+        <div className="vault-filters">
+          {vaultStatuses.map((filter) => (
+            <button
+              key={filter}
+              className={`pill ${vaultFilter === filter ? "primary" : ""}`}
+              type="button"
+              onClick={() => setVaultFilter(filter)}
+            >
+              {filter}
+            </button>
+          ))}
         </div>
         <div className="vault-list">
-          {[
-            { name: "Focus Fund", amount: "8,200 STX", unlock: "90 days", status: "On track" },
-            { name: "Voyage Buffer", amount: "3,450 STX", unlock: "21 days", status: "Near unlock" },
-            { name: "Launch Reserve", amount: "12,000 STX", unlock: "180 days", status: "Locked" }
-          ].map((vault) => (
+          {visibleVaults.map((vault) => (
             <div key={vault.name} className="vault-row">
               <div>
                 <p className="card-kicker">{vault.name}</p>
-                <p className="card-value">{vault.amount}</p>
+                <p className="card-value">{vault.amount.toLocaleString()} STX</p>
               </div>
               <div>
                 <p className="card-kicker">Unlock</p>
