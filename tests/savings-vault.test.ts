@@ -62,6 +62,24 @@ describe("Savings Vault", () => {
     expect(result.result).toBeErr(Cl.uint(406));
   });
 
+  it("respects a reduced max lock period", () => {
+    simnet.callPublicFn(
+      "savings-vault",
+      "set-max-lock-period",
+      [Cl.uint(LOCK_7_DAYS)],
+      deployer
+    );
+
+    const result = simnet.callPublicFn(
+      "savings-vault",
+      "create-vault",
+      [Cl.uint(100000000000), Cl.uint(LOCK_30_DAYS)],
+      wallet1
+    );
+
+    expect(result.result).toBeErr(Cl.uint(406));
+  });
+
   it("rejects invalid lock presets", () => {
     const result = simnet.callPublicFn(
       "savings-vault",
