@@ -11,9 +11,19 @@ export default function Home() {
   const [amount, setAmount] = useState("");
   const [duration, setDuration] = useState("");
   const [label, setLabel] = useState("");
+  const [activeFilter, setActiveFilter] = useState("All");
   const [baseUrl, setBaseUrl] = useState<string | null>(null);
   const parsedAmount = Number(amount.replace(/,/g, ""));
   const estimatedPenalty = Number.isFinite(parsedAmount) ? Math.round(parsedAmount * 0.08) : null;
+  const activity = [
+    { type: "Deposit", vault: "Focus Fund", amount: "4,200 STX", time: "2h ago" },
+    { type: "Withdrawal", vault: "Voyage Buffer", amount: "1,200 STX", time: "1d ago" },
+    { type: "Penalty", vault: "Launch Reserve", amount: "300 STX", time: "3d ago" },
+    { type: "Deposit", vault: "Launch Reserve", amount: "6,500 STX", time: "1w ago" }
+  ];
+  const filters = ["All", "Deposit", "Withdrawal", "Penalty"];
+  const visibleActivity =
+    activeFilter === "All" ? activity : activity.filter((item) => item.type === activeFilter);
 
   const handleCheckStatus = async () => {
     setStatus("checking");
@@ -210,6 +220,38 @@ export default function Home() {
                 <p className="card-value">{vault.unlock}</p>
               </div>
               <span className="vault-chip">{vault.status}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="activity reveal">
+        <div>
+          <p className="label">Activity feed</p>
+          <h2 className="section-title">Indexed vault activity</h2>
+          <p className="status">Filter events streamed from Chainhooks and grouped by vault.</p>
+        </div>
+        <div className="activity-filters">
+          {filters.map((filter) => (
+            <button
+              key={filter}
+              className={`pill ${activeFilter === filter ? "primary" : ""}`}
+              type="button"
+              onClick={() => setActiveFilter(filter)}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+        <div className="event-list">
+          {visibleActivity.map((item) => (
+            <div key={`${item.type}-${item.vault}-${item.time}`} className="event-item">
+              <span className={`event-badge ${item.type.toLowerCase()}`}>{item.type}</span>
+              <div>
+                <p className="card-kicker">{item.vault}</p>
+                <p className="card-value">{item.amount}</p>
+              </div>
+              <p className="event-time">{item.time}</p>
             </div>
           ))}
         </div>

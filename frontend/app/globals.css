@@ -330,6 +330,65 @@ img {
   font-weight: 600;
 }
 
+.activity {
+  display: grid;
+  gap: 18px;
+}
+
+.activity-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.event-list {
+  display: grid;
+  gap: 12px;
+}
+
+.event-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(26, 26, 26, 0.1);
+}
+
+.event-badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  background: rgba(217, 123, 58, 0.15);
+  color: var(--accent);
+}
+
+.event-badge.deposit {
+  background: rgba(44, 107, 98, 0.16);
+  color: var(--accent-2);
+}
+
+.event-badge.withdrawal {
+  background: rgba(138, 94, 59, 0.18);
+  color: var(--accent-3);
+}
+
+.event-badge.penalty {
+  background: rgba(185, 79, 60, 0.2);
+  color: #8b3326;
+}
+
+.event-time {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
 @keyframes lift {
   from {
     opacity: 0;
