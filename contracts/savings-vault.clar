@@ -244,6 +244,21 @@
   (map-get? vaults vault-id)
 )
 
+(define-read-only (get-vault-summary (vault-id uint))
+  (match (map-get? vaults vault-id)
+    vault
+      (ok {
+        vault-id: vault-id,
+        owner: (get owner vault),
+        balance: (get balance vault),
+        lock-until: (get lock-until vault),
+        created-at: (get created-at vault),
+        status: (get status vault)
+      })
+    err-vault-not-found
+  )
+)
+
 (define-read-only (is-locked (vault-id uint))
   (match (map-get? vaults vault-id)
     vault (ok (< block-height (get lock-until vault)))

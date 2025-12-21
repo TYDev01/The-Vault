@@ -51,6 +51,46 @@ describe("Savings Vault", () => {
     expect(result.result).toBeErr(Cl.uint(101));
   });
 
+  it("rejects invalid lock periods", () => {
+    const result = simnet.callPublicFn(
+      "savings-vault",
+      "create-vault",
+      [Cl.uint(100000000000), Cl.uint(LOCK_30_DAYS * 10)],
+      wallet1
+    );
+
+    expect(result.result).toBeErr(Cl.uint(406));
+  });
+
+  it("rejects invalid lock presets", () => {
+    const result = simnet.callPublicFn(
+      "savings-vault",
+      "create-vault-preset",
+      [Cl.uint(100000000000), Cl.stringAscii("999d")],
+      wallet1
+    );
+
+    expect(result.result).toBeErr(Cl.uint(406));
+  });
+
+  it("blocks create-vault when paused", () => {
+    simnet.callPublicFn(
+      "savings-vault",
+      "set-contract-paused",
+      [Cl.bool(true)],
+      deployer
+    );
+
+    const result = simnet.callPublicFn(
+      "savings-vault",
+      "create-vault",
+      [Cl.uint(100000000000), Cl.uint(LOCK_30_DAYS)],
+      wallet1
+    );
+
+    expect(result.result).toBeErr(Cl.uint(410));
+  });
+
   it("creates a vault using a preset lock period", () => {
     const result = simnet.callPublicFn(
       "savings-vault",
