@@ -1,0 +1,9 @@
+{
+	"servers": {
+		"Stacks Documentation": {
+			"url": "https://docs.stacks.co/learn/~gitbook/mcp",
+			"type": "http"
+		}
+	},
+	"inputs": []
+}

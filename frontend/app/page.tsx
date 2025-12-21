@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { connect, disconnect, getLocalStorage, isConnected, request } from "@stacks/connect";
 
 type ChainhookStatus = "idle" | "checking" | "ok" | "error";
 
@@ -13,6 +14,14 @@ export default function Home() {
   const [label, setLabel] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [baseUrl, setBaseUrl] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [walletState, setWalletState] = useState<{
+    connected: boolean;
+    stxAddress?: string;
+    btcAddress?: string;
+    provider?: string;
+  }>({ connected: false });
+  const [walletError, setWalletError] = useState<string | null>(null);
   const parsedAmount = Number(amount.replace(/,/g, ""));
   const estimatedPenalty = Number.isFinite(parsedAmount) ? Math.round(parsedAmount * 0.08) : null;
   const vaults = [
@@ -25,15 +34,96 @@ export default function Home() {
   const [vaultFilter, setVaultFilter] = useState("All");
   const visibleVaults =
     vaultFilter === "All" ? vaults : vaults.filter((vault) => vault.status === vaultFilter);
-  const activity = [
-    { type: "Deposit", vault: "Focus Fund", amount: "4,200 STX", time: "2h ago" },
-    { type: "Withdrawal", vault: "Voyage Buffer", amount: "1,200 STX", time: "1d ago" },
-    { type: "Penalty", vault: "Launch Reserve", amount: "300 STX", time: "3d ago" },
-    { type: "Deposit", vault: "Launch Reserve", amount: "6,500 STX", time: "1w ago" }
-  ];
+  const [activity, setActivity] = useState<
+    { type: string; vault: string; amount: string; time: string }[]
+  >([]);
+  const [activityState, setActivityState] = useState<"idle" | "loading" | "error" | "ready">(
+    "idle"
+  );
   const filters = ["All", "Deposit", "Withdrawal", "Penalty"];
   const visibleActivity =
     activeFilter === "All" ? activity : activity.filter((item) => item.type === activeFilter);
+
+  useEffect(() => {
+    const stored = getLocalStorage();
+    if (stored?.addresses) {
+      setWalletState({
+        connected: true,
+        stxAddress: stored.addresses.stx?.[0]?.address,
+        btcAddress: stored.addresses.btc?.[0]?.address
+      });
+    }
+    const loadActivity = async () => {
+      setActivityState("loading");
+      try {
+        const response = await fetch("/api/chainhooks/activity");
+        const payload = (await response.json()) as {
+          ok: boolean;
+          activity?: { type: string; vault: string; amount: string; time: string }[];
+        };
+        if (!payload.ok || !payload.activity) {
+          throw new Error("Activity fetch failed");
+        }
+        setActivity(payload.activity);
+        setActivityState("ready");
+      } catch (error) {
+        setActivityState("error");
+      }
+    };
+    loadActivity();
+  }, []);
+
+  const handlePlaceholderAction = (message: string) => {
+    setActionMessage(message);
+    window.setTimeout(() => setActionMessage(null), 2400);
+  };
+
+  const handleConnectWallet = async () => {
+    setWalletError(null);
+    try {
+      if (isConnected()) {
+        setActionMessage("Already connected");
+        return;
+      }
+      const response = await connect({
+        forceWalletSelect: true,
+        approvedProviderIds: ["LeatherProvider", "XverseProviders.BitcoinProvider"]
+      });
+      setWalletState({
+        connected: true,
+        stxAddress: response.addresses?.stx?.[0]?.address,
+        btcAddress: response.addresses?.btc?.[0]?.address,
+        provider: "Stacks Connect"
+      });
+      setActionMessage("Wallet connected");
+    } catch (error) {
+      setWalletError("Unable to connect wallet. Install Hiro/Leather or Xverse and try again.");
+    }
+  };
+
+  const handleDisconnectWallet = () => {
+    disconnect();
+    setWalletState({ connected: false });
+    setActionMessage("Wallet disconnected");
+  };
+
+  const handleRefreshAccount = async () => {
+    setWalletError(null);
+    try {
+      const accounts = await request("stx_getAccounts");
+      const account = accounts.addresses?.[0];
+      if (account?.address) {
+        setWalletState((prev) => ({
+          ...prev,
+          connected: true,
+          stxAddress: account.address
+        }));
+        setActionMessage("Account refreshed");
+      }
+    } catch (error) {
+      setWalletError("Unable to refresh account.");
+    }
+  };
 
   const handleCheckStatus = async () => {
     setStatus("checking");
@@ -63,9 +153,13 @@ export default function Home() {
           SavingVault
         </div>
         <div className="nav-actions">
-          <span className="pill">Docs</span>
-          <span className="pill">Vaults</span>
-          <button className="pill primary" type="button">
+          <button className="pill" type="button" onClick={() => handlePlaceholderAction("Docs coming soon")}>
+            Docs
+          </button>
+          <button className="pill" type="button" onClick={() => handlePlaceholderAction("Vaults view coming soon")}>
+            Vaults
+          </button>
+          <button className="pill primary" type="button" onClick={handleConnectWallet}>
             Launch App
           </button>
         </div>
@@ -80,10 +174,18 @@ export default function Home() {
             Chainhooks. SavingVault turns long-term goals into on-chain rituals.
           </p>
           <div className="nav-actions">
-            <button className="pill primary" type="button">
+            <button
+              className="pill primary"
+              type="button"
+              onClick={() => handlePlaceholderAction("Vault creation flow coming soon")}
+            >
               Create vault
             </button>
-            <button className="pill" type="button">
+            <button
+              className="pill"
+              type="button"
+              onClick={() => handlePlaceholderAction("Penalty preview coming soon")}
+            >
               Preview penalties
             </button>
           </div>
@@ -170,11 +272,18 @@ export default function Home() {
           ))}
         </div>
         <div className="builder-row">
-          <button className="pill primary" type="button">
+          <button
+            className="pill primary"
+            type="button"
+            onClick={() => handlePlaceholderAction("Vault plan saved (stub)")}
+          >
             Save vault plan
           </button>
           <button className="pill" type="button" onClick={handleCheckStatus}>
             Check Chainhooks API
+          </button>
+          <button className="pill" type="button" onClick={handleRefreshAccount}>
+            Refresh wallet
           </button>
           <div className="summary">
             <p className="card-kicker">Penalty estimate</p>
@@ -272,18 +381,25 @@ export default function Home() {
           ))}
         </div>
         <div className="event-list">
-          {visibleActivity.map((item) => (
-            <div key={`${item.type}-${item.vault}-${item.time}`} className="event-item">
-              <span className={`event-badge ${item.type.toLowerCase()}`}>{item.type}</span>
-              <div>
-                <p className="card-kicker">{item.vault}</p>
-                <p className="card-value">{item.amount}</p>
+          {activityState === "loading" && <div className="event-empty">Loading activity...</div>}
+          {activityState === "error" && (
+            <div className="event-empty">Unable to load Chainhooks activity.</div>
+          )}
+          {activityState === "ready" &&
+            visibleActivity.map((item) => (
+              <div key={`${item.type}-${item.vault}-${item.time}`} className="event-item">
+                <span className={`event-badge ${item.type.toLowerCase()}`}>{item.type}</span>
+                <div>
+                  <p className="card-kicker">{item.vault}</p>
+                  <p className="card-value">{item.amount}</p>
+                </div>
+                <p className="event-time">{item.time}</p>
               </div>
-              <p className="event-time">{item.time}</p>
-            </div>
-          ))}
+            ))}
         </div>
       </section>
+      {actionMessage && <div className="toast">{actionMessage}</div>}
+      {walletError && <div className="toast">{walletError}</div>}
     </main>
   );
 }
