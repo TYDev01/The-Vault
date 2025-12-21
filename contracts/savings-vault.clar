@@ -28,6 +28,7 @@
   created-at: uint,
   status: (string-ascii 10)
 })
+(define-map user-vaults principal (list 100 uint))
 (define-map user-vault-counts principal uint)
 
 ;; Lock period presets (in blocks, ~10 min per block)
@@ -119,6 +120,9 @@
         created-at: block-height,
         status: "active"
       })
+      (map-set user-vaults tx-sender
+        (unwrap-panic (as-max-len? (append (default-to (list) (map-get? user-vaults tx-sender)) vault-id) u100))
+      )
       (map-set user-vault-counts tx-sender (+ (default-to u0 (map-get? user-vault-counts tx-sender)) u1))
       (var-set vault-nonce vault-id)
       (print {event: "vault-created", vault-id: vault-id, owner: tx-sender, lock-until: lock-until, amount: initial-deposit})
@@ -264,6 +268,19 @@
         status: (get status vault)
       })
     err-vault-not-found
+  )
+)
+
+(define-read-only (get-user-vaults (owner principal))
+  (default-to (list) (map-get? user-vaults owner))
+)
+
+(define-read-only (get-user-vault-summaries (owner principal))
+  (let
+    (
+      (vault-ids (default-to (list) (map-get? user-vaults owner)))
+    )
+    (map get-vault-summary vault-ids)
   )
 )
 
