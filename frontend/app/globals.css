@@ -304,6 +304,19 @@ img {
   gap: 16px;
 }
 
+.vault-metrics {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin-top: 12px;
+}
+
+.vault-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .vault-list {
   display: grid;
   gap: 12px;
