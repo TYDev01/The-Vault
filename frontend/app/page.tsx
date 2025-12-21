@@ -8,6 +8,7 @@ type ChainhookStatus = "idle" | "checking" | "ok" | "error";
 export default function Home() {
   const [status, setStatus] = useState<ChainhookStatus>("idle");
   const [statusNote, setStatusNote] = useState("Not checked");
+  const [lastChecked, setLastChecked] = useState<string | null>(null);
   const baseUrl = process.env.NEXT_PUBLIC_CHAINHOOKS_API_URL ?? CHAINHOOKS_BASE_URL.testnet;
   const client = useMemo(() => new ChainhooksClient({ baseUrl }), [baseUrl]);
 
@@ -18,9 +19,11 @@ export default function Home() {
       await client.getStatus();
       setStatus("ok");
       setStatusNote("Chainhooks API reachable");
+      setLastChecked(new Date().toLocaleTimeString());
     } catch (error) {
       setStatus("error");
       setStatusNote("Unable to reach Chainhooks API");
+      setLastChecked(new Date().toLocaleTimeString());
     }
   };
 
@@ -118,6 +121,56 @@ export default function Home() {
           <button className="pill" type="button" onClick={handleCheckStatus}>
             Check Chainhooks API
           </button>
+        </div>
+      </section>
+
+      <section className="pulse reveal">
+        <div>
+          <p className="label">Network pulse</p>
+          <h2 className="section-title">Chainhooks readiness</h2>
+          <p className="status">
+            <span className={`status-dot ${status === "ok" ? "ok" : status === "error" ? "error" : ""}`} />
+            {statusNote}
+          </p>
+        </div>
+        <div className="pulse-card">
+          <div>
+            <p className="card-kicker">Active endpoint</p>
+            <p className="card-value">{baseUrl}</p>
+          </div>
+          <div>
+            <p className="card-kicker">Last check</p>
+            <p className="card-value">{lastChecked ?? "Not run"}</p>
+          </div>
+          <button className="pill" type="button" onClick={handleCheckStatus}>
+            Ping Chainhooks
+          </button>
+        </div>
+      </section>
+
+      <section className="vaults reveal">
+        <div>
+          <p className="label">Vault inventory</p>
+          <h2 className="section-title">Your active vaults</h2>
+        </div>
+        <div className="vault-list">
+          {[
+            { name: "Focus Fund", amount: "8,200 STX", unlock: "90 days", status: "On track" },
+            { name: "Voyage Buffer", amount: "3,450 STX", unlock: "21 days", status: "Near unlock" },
+            { name: "Launch Reserve", amount: "12,000 STX", unlock: "180 days", status: "Locked" }
+          ].map((vault) => (
+            <div key={vault.name} className="vault-row">
+              <div>
+                <p className="card-kicker">{vault.name}</p>
+                <p className="card-value">{vault.amount}</p>
+              </div>
+              <div>
+                <p className="card-kicker">Unlock</p>
+                <p className="card-value">{vault.unlock}</p>
+              </div>
+              <span className="vault-chip">{vault.status}</span>
+            </div>
+          ))}
         </div>
       </section>
     </main>

@@ -258,6 +258,67 @@ img {
   animation: lift 700ms ease-out both;
 }
 
+.pulse {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: center;
+}
+
+.pulse-card {
+  background: var(--card);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  border: 1px solid var(--card-border);
+  display: grid;
+  gap: 16px;
+}
+
+.card-kicker {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--accent-2);
+  margin: 0 0 6px;
+}
+
+.card-value {
+  font-size: 1.1rem;
+  margin: 0;
+  word-break: break-all;
+}
+
+.vaults {
+  display: grid;
+  gap: 16px;
+}
+
+.vault-list {
+  display: grid;
+  gap: 12px;
+}
+
+.vault-row {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  align-items: center;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(26, 26, 26, 0.1);
+}
+
+.vault-chip {
+  justify-self: start;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(44, 107, 98, 0.15);
+  color: var(--accent-2);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 @keyframes lift {
   from {
     opacity: 0;
