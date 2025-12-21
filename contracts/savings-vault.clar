@@ -35,11 +35,11 @@
 (define-constant lock-30-days u4320)
 (define-constant lock-90-days u12960)
 (define-constant lock-180-days u25920)
-(define-constant max-lock-period lock-180-days)
+(define-data-var max-lock-period uint lock-180-days)
 
 ;; Lock period helpers
 (define-read-only (is-valid-lock-period (period uint))
-  (and (> period u0) (<= period max-lock-period))
+  (and (> period u0) (<= period (var-get max-lock-period)))
 )
 
 (define-read-only (get-lock-period-preset (preset (string-ascii 10)))
@@ -89,6 +89,14 @@
     (asserts! (is-eq tx-sender contract-owner) err-unauthorized)
     (asserts! (> amount u0) err-invalid-amount)
     (ok (var-set min-deposit amount))
+  )
+)
+
+(define-public (set-max-lock-period (period uint))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-unauthorized)
+    (asserts! (> period u0) err-invalid-lock-period)
+    (ok (var-set max-lock-period period))
   )
 )
 
@@ -292,6 +300,10 @@
 
 (define-read-only (get-vault-count)
   (var-get vault-nonce)
+)
+
+(define-read-only (get-max-lock-period)
+  (var-get max-lock-period)
 )
 
 (define-read-only (get-user-vault-count (owner principal))
