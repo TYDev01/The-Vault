@@ -24,7 +24,8 @@
   owner: principal,
   balance: uint,
   lock-until: uint,
-  created-at: uint
+  created-at: uint,
+  status: (string-ascii 10)
 })
 
 ;; Lock period presets (in blocks, ~10 min per block)
@@ -87,7 +88,8 @@
         owner: tx-sender,
         balance: initial-deposit,
         lock-until: lock-until,
-        created-at: block-height
+        created-at: block-height,
+        status: "active"
       })
       (var-set vault-nonce vault-id)
       (print {event: "vault-created", vault-id: vault-id, owner: tx-sender, lock-until: lock-until})
@@ -111,9 +113,11 @@
       (vault (unwrap! (map-get? vaults vault-id) err-vault-not-found))
       (owner (get owner vault))
       (balance (get balance vault))
+      (status (get status vault))
     )
     (asserts! (not (var-get contract-paused)) err-paused)
     (asserts! (is-eq tx-sender owner) err-unauthorized)
+    (asserts! (is-eq status "active") err-unauthorized)
     (asserts! (> amount u0) err-invalid-amount)
     (try! (contract-call? token-contract transfer amount tx-sender (as-contract tx-sender) none))
     (map-set vaults vault-id (merge vault { balance: (+ balance amount) }))
@@ -129,9 +133,11 @@
       (owner (get owner vault))
       (balance (get balance vault))
       (lock-until (get lock-until vault))
+      (status (get status vault))
     )
     (asserts! (not (var-get contract-paused)) err-paused)
     (asserts! (is-eq tx-sender owner) err-unauthorized)
+    (asserts! (is-eq status "active") err-unauthorized)
     (asserts! (> amount u0) err-invalid-amount)
     (asserts! (>= block-height lock-until) err-still-locked)
     (asserts! (>= balance amount) err-insufficient-balance)
@@ -149,12 +155,14 @@
       (owner (get owner vault))
       (balance (get balance vault))
       (locked (< block-height (get lock-until vault)))
+      (status (get status vault))
       (penalty-bps (var-get early-withdrawal-penalty))
       (penalty (if locked (/ (* amount penalty-bps) basis-points) u0))
       (received (if (>= amount penalty) (- amount penalty) u0))
     )
     (asserts! (not (var-get contract-paused)) err-paused)
     (asserts! (is-eq tx-sender owner) err-unauthorized)
+    (asserts! (is-eq status "active") err-unauthorized)
     (asserts! (> amount u0) err-invalid-amount)
     (asserts! (>= balance amount) err-insufficient-balance)
     (try! (as-contract (contract-call? token-contract transfer received tx-sender owner none)))
@@ -165,6 +173,24 @@
     (map-set vaults vault-id (merge vault { balance: (- balance amount) }))
     (print {event: "early-withdraw", vault-id: vault-id, amount: amount, penalty: penalty, received: received})
     (ok {penalty: penalty, received: received})
+  )
+)
+
+;; Vault close
+(define-public (close-vault (vault-id uint))
+  (let
+    (
+      (vault (unwrap! (map-get? vaults vault-id) err-vault-not-found))
+      (owner (get owner vault))
+      (balance (get balance vault))
+      (status (get status vault))
+    )
+    (asserts! (is-eq tx-sender owner) err-unauthorized)
+    (asserts! (is-eq status "active") err-unauthorized)
+    (asserts! (is-eq balance u0) err-invalid-amount)
+    (map-set vaults vault-id (merge vault { status: "closed" }))
+    (print {event: "vault-closed", vault-id: vault-id, owner: owner})
+    (ok true)
   )
 )
 

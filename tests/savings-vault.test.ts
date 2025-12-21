@@ -149,4 +149,31 @@ describe("Savings Vault", () => {
 
     expect(withdrawResult.result).toBeErr(Cl.uint(403));
   });
+
+  it("allows closing a vault after full withdrawal", () => {
+    simnet.callPublicFn(
+      "savings-vault",
+      "create-vault",
+      [Cl.uint(100000000000), Cl.uint(LOCK_7_DAYS)],
+      wallet1
+    );
+
+    simnet.mineEmptyBlocks(LOCK_7_DAYS + 1);
+
+    simnet.callPublicFn(
+      "savings-vault",
+      "withdraw",
+      [Cl.uint(1), Cl.uint(100000000000)],
+      wallet1
+    );
+
+    const closeResult = simnet.callPublicFn(
+      "savings-vault",
+      "close-vault",
+      [Cl.uint(1)],
+      wallet1
+    );
+
+    expect(closeResult.result).toBeOk(Cl.bool(true));
+  });
 });
