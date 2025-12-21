@@ -16,31 +16,13 @@ epoch = "3.1"
 path = "contracts/sip-010-trait.clar"
 # clarity_version and epoch are inherited from [clarinet.core]
 
-[contracts.arkadiko-yield-adapter-trait]
-path = "contracts/arkadiko-yield-adapter-trait.clar"
-
 [contracts.mock-sbtc]
 path = "contracts/mock-sbtc.clar"
 depends_on = ["sip-010-trait"]
 
-[contracts.arkadiko-yield-adapter-v3]
-path = "contracts/arkadiko-yield-adapter.clar"
-depends_on = ["arkadiko-yield-adapter-trait", "mock-sbtc"]
-
-[contracts.time-lock-v3]
-path = "contracts/time-lock.clar"
-
-[contracts.vault-factory-v3]
-path = "contracts/vault-factory.clar"
-depends_on = ["time-lock-v3"]
-
-[contracts.auto-yield-engine-v3]
-path = "contracts/auto-yield-engine.clar"
-depends_on = ["vault-factory-v3", "arkadiko-yield-adapter-v3", "mock-sbtc"]
-
-[contracts.main-vault-v3]
-path = "contracts/main-vault.clar"
-depends_on = ["vault-factory-v3", "time-lock-v3", "auto-yield-engine-v3", "mock-sbtc"]
+[contracts.savings-vault]
+path = "contracts/savings-vault.clar"
+depends_on = ["mock-sbtc"]
 
 [repl.analysis]
 passes = ["check_checker"]
