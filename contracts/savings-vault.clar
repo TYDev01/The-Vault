@@ -27,6 +27,34 @@
   created-at: uint
 })
 
+;; Lock period presets (in blocks, ~10 min per block)
+(define-constant lock-7-days u1008)
+(define-constant lock-30-days u4320)
+(define-constant lock-90-days u12960)
+(define-constant lock-180-days u25920)
+(define-constant max-lock-period lock-180-days)
+
+;; Lock period helpers
+(define-read-only (is-valid-lock-period (period uint))
+  (and (> period u0) (<= period max-lock-period))
+)
+
+(define-read-only (get-lock-period-preset (preset (string-ascii 10)))
+  (if (is-eq preset "7d")
+    (some lock-7-days)
+    (if (is-eq preset "30d")
+      (some lock-30-days)
+      (if (is-eq preset "90d")
+        (some lock-90-days)
+        (if (is-eq preset "180d")
+          (some lock-180-days)
+          none
+        )
+      )
+    )
+  )
+)
+
 ;; Admin functions
 (define-public (set-contract-paused (paused bool))
   (begin
@@ -48,7 +76,7 @@
   (begin
     (asserts! (not (var-get contract-paused)) err-paused)
     (asserts! (> initial-deposit u0) err-invalid-amount)
-    (asserts! (> lock-period u0) err-invalid-lock-period)
+    (asserts! (is-valid-lock-period lock-period) err-invalid-lock-period)
     (let
       (
         (vault-id (+ (var-get vault-nonce) u1))
@@ -65,6 +93,15 @@
       (print {event: "vault-created", vault-id: vault-id, owner: tx-sender, lock-until: lock-until})
       (ok vault-id)
     )
+  )
+)
+
+(define-public (create-vault-preset (initial-deposit uint) (lock-preset (string-ascii 10)))
+  (let
+    (
+      (lock-period (unwrap! (get-lock-period-preset lock-preset) err-invalid-lock-period))
+    )
+    (create-vault initial-deposit lock-period)
   )
 )
 

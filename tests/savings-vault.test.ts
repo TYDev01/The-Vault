@@ -40,6 +40,17 @@ describe("Savings Vault", () => {
     expect(result.result).toBeOk(Cl.uint(1));
   });
 
+  it("creates a vault using a preset lock period", () => {
+    const result = simnet.callPublicFn(
+      "savings-vault",
+      "create-vault-preset",
+      [Cl.uint(100000000000), Cl.stringAscii("30d")],
+      wallet1
+    );
+
+    expect(result.result).toBeOk(Cl.uint(1));
+  });
+
   it("allows deposits to an existing vault", () => {
     simnet.callPublicFn(
       "savings-vault",
