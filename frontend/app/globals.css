@@ -359,6 +359,14 @@ img {
   gap: 12px;
 }
 
+.event-empty {
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px dashed rgba(26, 26, 26, 0.2);
+  color: var(--ink-soft);
+}
+
 .event-item {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -400,6 +408,29 @@ img {
   margin: 0;
   font-size: 0.9rem;
   color: var(--ink-soft);
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--ink);
+  color: #fff8ef;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  box-shadow: 0 12px 30px rgba(26, 26, 26, 0.25);
+  z-index: 40;
+}
+
+
+
+@media (max-width: 720px) {
+  .toast {
+    left: 24px;
+    right: 24px;
+    text-align: center;
+  }
 }
 
 @keyframes lift {
