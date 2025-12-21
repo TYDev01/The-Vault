@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CHAINHOOKS_BASE_URL, ChainhooksClient } from "@hirosystems/chainhooks-client";
+import { useState } from "react";
 
 type ChainhookStatus = "idle" | "checking" | "ok" | "error";
 
@@ -9,16 +8,25 @@ export default function Home() {
   const [status, setStatus] = useState<ChainhookStatus>("idle");
   const [statusNote, setStatusNote] = useState("Not checked");
   const [lastChecked, setLastChecked] = useState<string | null>(null);
-  const baseUrl = process.env.NEXT_PUBLIC_CHAINHOOKS_API_URL ?? CHAINHOOKS_BASE_URL.testnet;
-  const client = useMemo(() => new ChainhooksClient({ baseUrl }), [baseUrl]);
+  const [amount, setAmount] = useState("");
+  const [duration, setDuration] = useState("");
+  const [label, setLabel] = useState("");
+  const [baseUrl, setBaseUrl] = useState<string | null>(null);
+  const parsedAmount = Number(amount.replace(/,/g, ""));
+  const estimatedPenalty = Number.isFinite(parsedAmount) ? Math.round(parsedAmount * 0.08) : null;
 
   const handleCheckStatus = async () => {
     setStatus("checking");
     setStatusNote("Checking Chainhooks API...");
     try {
-      await client.getStatus();
+      const response = await fetch("/api/chainhooks/status");
+      const payload = (await response.json()) as { ok: boolean; baseUrl?: string };
+      if (!payload.ok) {
+        throw new Error("Chainhooks check failed");
+      }
       setStatus("ok");
       setStatusNote("Chainhooks API reachable");
+      setBaseUrl(payload.baseUrl ?? null);
       setLastChecked(new Date().toLocaleTimeString());
     } catch (error) {
       setStatus("error");
@@ -110,9 +118,36 @@ export default function Home() {
           </p>
         </div>
         <div className="builder-row">
-          <input className="input" placeholder="Amount (STX)" />
-          <input className="input" placeholder="Lock duration" />
-          <input className="input" placeholder="Vault label" />
+          <input
+            className="input"
+            placeholder="Amount (STX)"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+          />
+          <input
+            className="input"
+            placeholder="Lock duration (days)"
+            value={duration}
+            onChange={(event) => setDuration(event.target.value)}
+          />
+          <input
+            className="input"
+            placeholder="Vault label"
+            value={label}
+            onChange={(event) => setLabel(event.target.value)}
+          />
+        </div>
+        <div className="builder-row presets">
+          {["7", "30", "90", "180"].map((preset) => (
+            <button
+              key={preset}
+              className={`pill ${duration === preset ? "primary" : ""}`}
+              type="button"
+              onClick={() => setDuration(preset)}
+            >
+              {preset} days
+            </button>
+          ))}
         </div>
         <div className="builder-row">
           <button className="pill primary" type="button">
@@ -121,6 +156,12 @@ export default function Home() {
           <button className="pill" type="button" onClick={handleCheckStatus}>
             Check Chainhooks API
           </button>
+          <div className="summary">
+            <p className="card-kicker">Penalty estimate</p>
+            <p className="card-value">
+              {estimatedPenalty === null ? "--" : `${estimatedPenalty.toLocaleString()} STX`}
+            </p>
+          </div>
         </div>
       </section>
 
@@ -136,7 +177,7 @@ export default function Home() {
         <div className="pulse-card">
           <div>
             <p className="card-kicker">Active endpoint</p>
-            <p className="card-value">{baseUrl}</p>
+            <p className="card-value">{baseUrl ?? "Not checked"}</p>
           </div>
           <div>
             <p className="card-kicker">Last check</p>
