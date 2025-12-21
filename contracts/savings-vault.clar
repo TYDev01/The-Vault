@@ -65,6 +65,16 @@
   )
 )
 
+;; Emergency rescue for accidental token transfers (owner-only, paused)
+(define-public (rescue-token (token principal) (amount uint) (recipient principal))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-unauthorized)
+    (asserts! (var-get contract-paused) err-paused)
+    (asserts! (> amount u0) err-invalid-amount)
+    (as-contract (contract-call? token transfer amount tx-sender recipient none))
+  )
+)
+
 (define-public (set-early-withdrawal-penalty (new-penalty uint))
   (begin
     (asserts! (is-eq tx-sender contract-owner) err-unauthorized)
@@ -101,7 +111,7 @@
         status: "active"
       })
       (var-set vault-nonce vault-id)
-      (print {event: "vault-created", vault-id: vault-id, owner: tx-sender, lock-until: lock-until})
+      (print {event: "vault-created", vault-id: vault-id, owner: tx-sender, lock-until: lock-until, amount: initial-deposit})
       (ok vault-id)
     )
   )
@@ -130,7 +140,7 @@
     (asserts! (>= amount (var-get min-deposit)) err-invalid-amount)
     (try! (contract-call? token-contract transfer amount tx-sender (as-contract tx-sender) none))
     (map-set vaults vault-id (merge vault { balance: (+ balance amount) }))
-    (print {event: "deposit", vault-id: vault-id, amount: amount, new-balance: (+ balance amount)})
+    (print {event: "deposit", vault-id: vault-id, amount: amount, new-balance: (+ balance amount), owner: owner})
     (ok true)
   )
 )
@@ -152,7 +162,7 @@
     (asserts! (>= balance amount) err-insufficient-balance)
     (try! (as-contract (contract-call? token-contract transfer amount tx-sender owner none)))
     (map-set vaults vault-id (merge vault { balance: (- balance amount) }))
-    (print {event: "withdraw", vault-id: vault-id, amount: amount, new-balance: (- balance amount)})
+    (print {event: "withdraw", vault-id: vault-id, amount: amount, new-balance: (- balance amount), owner: owner})
     (ok true)
   )
 )
@@ -180,7 +190,7 @@
       true
     )
     (map-set vaults vault-id (merge vault { balance: (- balance amount) }))
-    (print {event: "early-withdraw", vault-id: vault-id, amount: amount, penalty: penalty, received: received})
+    (print {event: "early-withdraw", vault-id: vault-id, amount: amount, penalty: penalty, received: received, owner: owner})
     (ok {penalty: penalty, received: received})
   )
 )
@@ -224,12 +234,14 @@
           (penalty-bps (var-get early-withdrawal-penalty))
           (penalty (if locked (/ (* amount penalty-bps) basis-points) u0))
           (received (if (>= amount penalty) (- amount penalty) u0))
+          (blocks-until-unlock (if locked (- (get lock-until vault) block-height) u0))
         )
         (ok {
           locked: locked,
           penalty: penalty,
           received: received,
-          lock-until: (get lock-until vault)
+          lock-until: (get lock-until vault),
+          blocks-until-unlock: blocks-until-unlock
         })
       )
     err-vault-not-found
