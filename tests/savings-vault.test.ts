@@ -238,4 +238,51 @@ describe("Savings Vault", () => {
     expect(rescueResult.result).toBeOk(Cl.bool(true));
     expect(balanceAfter.result).toBeOk(Cl.uint(INITIAL_MINT + 1000));
   });
+
+  it("allows emergency withdraws when paused", () => {
+    simnet.callPublicFn(
+      "savings-vault",
+      "create-vault",
+      [Cl.uint(100000000000), Cl.uint(LOCK_7_DAYS)],
+      wallet1
+    );
+
+    simnet.mineEmptyBlocks(LOCK_7_DAYS + 1);
+
+    simnet.callPublicFn(
+      "savings-vault",
+      "set-contract-paused",
+      [Cl.bool(true)],
+      deployer
+    );
+
+    const result = simnet.callPublicFn(
+      "savings-vault",
+      "emergency-withdraw",
+      [Cl.uint(1), Cl.uint(50000000000)],
+      wallet1
+    );
+
+    expect(result.result).toBeOk(Cl.bool(true));
+  });
+
+  it("blocks emergency withdraws when not paused", () => {
+    simnet.callPublicFn(
+      "savings-vault",
+      "create-vault",
+      [Cl.uint(100000000000), Cl.uint(LOCK_7_DAYS)],
+      wallet1
+    );
+
+    simnet.mineEmptyBlocks(LOCK_7_DAYS + 1);
+
+    const result = simnet.callPublicFn(
+      "savings-vault",
+      "emergency-withdraw",
+      [Cl.uint(1), Cl.uint(50000000000)],
+      wallet1
+    );
+
+    expect(result.result).toBeErr(Cl.uint(410));
+  });
 });
