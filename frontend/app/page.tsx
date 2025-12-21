@@ -78,6 +78,11 @@ export default function Home() {
     window.setTimeout(() => setActionMessage(null), 2400);
   };
 
+  const formatAddress = (address?: string) => {
+    if (!address) return "Unknown";
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
   const handleConnectWallet = async () => {
     setWalletError(null);
     try {
@@ -164,6 +169,46 @@ export default function Home() {
           </button>
         </div>
       </nav>
+
+      <section className="wallet-status reveal">
+        <div>
+          <p className="label">Wallet status</p>
+          <h2 className="section-title">
+            {walletState.connected ? "Connected" : "Not connected"}
+          </h2>
+          <p className="status">
+            {walletState.connected ? "Ready to sign transactions." : "Connect a wallet to proceed."}
+          </p>
+        </div>
+        <div className="wallet-actions">
+          <div className="wallet-detail">
+            <p className="card-kicker">Provider</p>
+            <p className="card-value">{walletState.provider ?? "None"}</p>
+          </div>
+          <div className="wallet-detail">
+            <p className="card-kicker">STX Address</p>
+            <p className="card-value">{formatAddress(walletState.stxAddress)}</p>
+          </div>
+          <div className="wallet-detail">
+            <p className="card-kicker">BTC Address</p>
+            <p className="card-value">{formatAddress(walletState.btcAddress)}</p>
+          </div>
+          <div className="wallet-buttons">
+            <button className="pill" type="button" onClick={handleRefreshAccount}>
+              Refresh wallet
+            </button>
+            {walletState.connected ? (
+              <button className="pill primary" type="button" onClick={handleDisconnectWallet}>
+                Disconnect
+              </button>
+            ) : (
+              <button className="pill primary" type="button" onClick={handleConnectWallet}>
+                Connect wallet
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
 
       <section className="hero">
         <div className="reveal">
