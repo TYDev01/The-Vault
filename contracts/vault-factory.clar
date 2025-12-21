@@ -40,7 +40,7 @@
 (define-data-var token-contract principal .mock-sbtc)
 
 ;; Initialize contract
-(map-set approved-adapters .arkadiko-yield-adapter true)
+(map-set approved-adapters .arkadiko-yield-adapter-v3 true)
 
 ;; Admin functions
 
@@ -104,7 +104,7 @@
     (add-vault-to-user owner vault-id)
     
     ;; Create time-lock entry
-    (try! (contract-call? .time-lock create-lock vault-id lock-period is-perpetual owner))
+    (try! (contract-call? .time-lock-v3 create-lock vault-id lock-period is-perpetual owner))
     
     ;; Increment nonce
     (var-set vault-nonce vault-id)
@@ -135,7 +135,7 @@
 )
   (let
     (
-      (lock-period (unwrap! (contract-call? .time-lock get-lock-period-preset lock-preset) err-invalid-lock-period))
+      (lock-period (unwrap! (contract-call? .time-lock-v3 get-lock-period-preset lock-preset) err-invalid-lock-period))
     )
     (create-vault initial-deposit lock-period adapter is-perpetual)
   )
@@ -172,8 +172,8 @@
     )
     ;; Only authorized contracts can update balance
     (asserts! (or 
-      (is-eq contract-caller .main-vault)
-      (is-eq contract-caller .auto-yield-engine)
+      (is-eq contract-caller .main-vault-v3)
+      (is-eq contract-caller .auto-yield-engine-v3)
       (is-eq tx-sender contract-owner)
     ) err-unauthorized)
     
@@ -193,7 +193,7 @@
     )
     ;; Only authorized contracts can update yield
     (asserts! (or 
-      (is-eq contract-caller .auto-yield-engine)
+      (is-eq contract-caller .auto-yield-engine-v3)
       (is-eq tx-sender contract-owner)
     ) err-unauthorized)
     
@@ -212,7 +212,7 @@
     )
     ;; Only authorized contracts can reset yield
     (asserts! (or 
-      (is-eq contract-caller .auto-yield-engine)
+      (is-eq contract-caller .auto-yield-engine-v3)
       (is-eq tx-sender contract-owner)
     ) err-unauthorized)
     
@@ -232,7 +232,7 @@
       (new-total-deposited (+ (get total-deposited vault-data) amount))
     )
     (asserts! (or 
-      (is-eq contract-caller .main-vault)
+      (is-eq contract-caller .main-vault-v3)
       (is-eq tx-sender contract-owner)
     ) err-unauthorized)
     
@@ -254,7 +254,7 @@
       (new-total-withdrawn (+ (get total-withdrawn vault-data) amount))
     )
     (asserts! (or 
-      (is-eq contract-caller .main-vault)
+      (is-eq contract-caller .main-vault-v3)
       (is-eq tx-sender contract-owner)
     ) err-unauthorized)
     
@@ -318,7 +318,7 @@
     vault-data
       (let
         (
-          (lock-info (contract-call? .time-lock get-lock-info vault-id))
+          (lock-info (contract-call? .time-lock-v3 get-lock-info vault-id))
         )
         (ok {
           vault-id: vault-id,

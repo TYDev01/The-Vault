@@ -46,8 +46,8 @@
 (define-private (is-authorized-caller)
   (or 
     (is-eq tx-sender contract-owner)
-    (is-eq contract-caller .main-vault)
-    (is-eq contract-caller .vault-factory)
+    (is-eq contract-caller .main-vault-v3)
+    (is-eq contract-caller .vault-factory-v3)
   )
 )
 
@@ -56,7 +56,7 @@
 (define-public (allocate-to-adapter (vault-id uint) (amount uint))
   (let
     (
-      (vault-info (unwrap! (contract-call? .vault-factory get-vault-info vault-id) err-vault-not-found))
+      (vault-info (unwrap! (contract-call? .vault-factory-v3 get-vault-info vault-id) err-vault-not-found))
       (adapter (get adapter vault-info))
       (current-state (default-to
         {total-allocated: u0, total-harvested: u0, total-compounded: u0, last-harvest-height: block-height, last-compound-height: block-height, adapter: adapter}
@@ -69,7 +69,7 @@
     
     ;; Call adapter's deposit function via trait
     ;; Use contract-caller (main-vault) as the source of funds
-    (match (contract-call? .arkadiko-yield-adapter deposit amount contract-caller)
+    (match (contract-call? .arkadiko-yield-adapter-v3 deposit amount contract-caller)
       success
         (begin
           ;; Update yield state
@@ -98,7 +98,7 @@
 (define-public (harvest-yield (vault-id uint))
   (let
     (
-      (vault-info (unwrap! (contract-call? .vault-factory get-vault-info vault-id) err-vault-not-found))
+      (vault-info (unwrap! (contract-call? .vault-factory-v3 get-vault-info vault-id) err-vault-not-found))
       (adapter (get adapter vault-info))
       (current-state (unwrap! (map-get? vault-yield-state vault-id) err-vault-not-found))
     )
@@ -106,7 +106,7 @@
     (asserts! (is-authorized-caller) err-unauthorized)
     
     ;; Call adapter's harvest function via trait
-    (match (contract-call? .arkadiko-yield-adapter harvest vault-id)
+    (match (contract-call? .arkadiko-yield-adapter-v3 harvest vault-id)
       yield-amount
         (begin
           ;; Update yield state
@@ -116,7 +116,7 @@
           }))
           
           ;; Update vault's accrued yield in factory
-          (try! (contract-call? .vault-factory update-vault-yield vault-id yield-amount))
+          (try! (contract-call? .vault-factory-v3 update-vault-yield vault-id yield-amount))
           
           (print {
             event: "yield-harvested",
@@ -138,7 +138,7 @@
 (define-public (compound-yield (vault-id uint))
   (let
     (
-      (vault-info (unwrap! (contract-call? .vault-factory get-vault-info vault-id) err-vault-not-found))
+      (vault-info (unwrap! (contract-call? .vault-factory-v3 get-vault-info vault-id) err-vault-not-found))
       (yield-accrued (get yield-accrued vault-info))
       (adapter (get adapter vault-info))
       (current-state (unwrap! (map-get? vault-yield-state vault-id) err-vault-not-found))
@@ -148,7 +148,7 @@
     (asserts! (>= yield-accrued (var-get min-compound-amount)) err-insufficient-yield)
     
     ;; Compound accrued yield in adapter (virtual - no token transfer)
-    (match (contract-call? .arkadiko-yield-adapter compound-yield vault-id yield-accrued)
+    (match (contract-call? .arkadiko-yield-adapter-v3 compound-yield vault-id yield-accrued)
       success
         (begin
           ;; Update yield state
@@ -159,11 +159,11 @@
           }))
           
           ;; Update vault balance (add yield to principal)
-          (try! (contract-call? .vault-factory update-vault-balance vault-id 
+          (try! (contract-call? .vault-factory-v3 update-vault-balance vault-id 
             (+ (get balance vault-info) yield-accrued)))
           
           ;; Reset accrued yield to 0
-          (try! (contract-call? .vault-factory reset-vault-yield vault-id))
+          (try! (contract-call? .vault-factory-v3 reset-vault-yield vault-id))
           
           (print {
             event: "yield-compounded",
@@ -185,7 +185,7 @@
 (define-public (withdraw-from-adapter (vault-id uint) (amount uint))
   (let
     (
-      (vault-info (unwrap! (contract-call? .vault-factory get-vault-info vault-id) err-vault-not-found))
+      (vault-info (unwrap! (contract-call? .vault-factory-v3 get-vault-info vault-id) err-vault-not-found))
       (adapter (get adapter vault-info))
       (vault-owner (get owner vault-info))
       (caller contract-caller)
@@ -195,7 +195,7 @@
     (asserts! (> amount u0) err-invalid-amount)
     
     ;; Call adapter's withdraw function via trait
-    (match (contract-call? .arkadiko-yield-adapter withdraw amount (as-contract tx-sender))
+    (match (contract-call? .arkadiko-yield-adapter-v3 withdraw amount (as-contract tx-sender))
       withdrawn-amount
         (begin
           ;; Transfer tokens from auto-yield-engine back to main-vault
@@ -272,11 +272,11 @@
 )
 
 (define-public (get-adapter-balance (vault-id uint))
-  (contract-call? .arkadiko-yield-adapter get-balance vault-id)
+  (contract-call? .arkadiko-yield-adapter-v3 get-balance vault-id)
 )
 
 (define-public (get-adapter-metadata (vault-id uint))
-  (contract-call? .arkadiko-yield-adapter get-metadata)
+  (contract-call? .arkadiko-yield-adapter-v3 get-metadata)
 )
 
 (define-public (calculate-pending-yield (vault-id uint))
@@ -307,7 +307,7 @@
 )
 
 (define-read-only (should-compound (vault-id uint))
-  (match (contract-call? .vault-factory get-vault-info vault-id)
+  (match (contract-call? .vault-factory-v3 get-vault-info vault-id)
     vault-info
       (let
         (
@@ -324,7 +324,7 @@
 (define-read-only (get-vault-yield-summary (vault-id uint))
   (match (map-get? vault-yield-state vault-id)
     yield-state
-      (match (contract-call? .vault-factory get-vault-info vault-id)
+      (match (contract-call? .vault-factory-v3 get-vault-info vault-id)
         vault-info
           (ok {
             vault-id: vault-id,

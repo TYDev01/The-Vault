@@ -15,32 +15,32 @@ describe("Savings Vault Integration Tests", () => {
   beforeEach(() => {
     // Authorize contracts to call time-lock
     simnet.callPublicFn(
-      "time-lock",
+      "time-lock-v3",
       "add-authorized-caller",
-      [Cl.principal(`${deployer}.vault-factory`)],
+      [Cl.principal(`${deployer}.vault-factory-v3`)],
       deployer
     );
     
     simnet.callPublicFn(
-      "time-lock",
+      "time-lock-v3",
       "add-authorized-caller",
-      [Cl.principal(`${deployer}.main-vault`)],
+      [Cl.principal(`${deployer}.main-vault-v3`)],
       deployer
     );
     
     // Approve the mock adapter in vault-factory
     simnet.callPublicFn(
-      "vault-factory",
+      "vault-factory-v3",
       "add-approved-adapter",
-      [Cl.principal(`${deployer}.arkadiko-yield-adapter`)],
+      [Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`)],
       deployer
     );
     
     // Authorize auto-yield-engine to call the adapter
     simnet.callPublicFn(
-      "arkadiko-yield-adapter",
+      "arkadiko-yield-adapter-v3",
       "set-authorized-caller",
-      [Cl.principal(`${deployer}.auto-yield-engine`)],
+      [Cl.principal(`${deployer}.auto-yield-engine-v3`)],
       deployer
     );
     
@@ -65,12 +65,12 @@ describe("Savings Vault Integration Tests", () => {
       const depositAmount = 100000000000; // 1,000 sBTC
       
       const result = simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "create-vault-with-deposit",
         [
           Cl.uint(depositAmount),
           Cl.uint(LOCK_30_DAYS),
-          Cl.principal(`${deployer}.arkadiko-yield-adapter`),
+          Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`),
           Cl.bool(false),
         ],
         wallet1
@@ -81,12 +81,12 @@ describe("Savings Vault Integration Tests", () => {
 
     it("should fail to create vault with zero deposit", () => {
       const result = simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "create-vault-with-deposit",
         [
           Cl.uint(0),
           Cl.uint(LOCK_30_DAYS),
-          Cl.principal(`${deployer}.arkadiko-yield-adapter`),
+          Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`),
           Cl.bool(false),
         ],
         wallet1
@@ -101,12 +101,12 @@ describe("Savings Vault Integration Tests", () => {
       // Create vault first
       const initialDeposit = 100000000000;
       const createResult = simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "create-vault-with-deposit",
         [
           Cl.uint(initialDeposit),
           Cl.uint(LOCK_30_DAYS),
-          Cl.principal(`${deployer}.arkadiko-yield-adapter`),
+          Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`),
           Cl.bool(false),
         ],
         wallet1
@@ -116,7 +116,7 @@ describe("Savings Vault Integration Tests", () => {
       const additionalDeposit = 50000000000; // 500 sBTC
 
       const depositResult = simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "deposit",
         [Cl.uint(vaultId), Cl.uint(additionalDeposit)],
         wallet1
@@ -131,12 +131,12 @@ describe("Savings Vault Integration Tests", () => {
       // Create vault
       const depositAmount = 100000000000;
       simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "create-vault-with-deposit",
         [
           Cl.uint(depositAmount),
           Cl.uint(LOCK_30_DAYS),
-          Cl.principal(`${deployer}.arkadiko-yield-adapter`),
+          Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`),
           Cl.bool(false),
         ],
         wallet1
@@ -146,7 +146,7 @@ describe("Savings Vault Integration Tests", () => {
 
       // Try to withdraw immediately
       const withdrawResult = simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "withdraw",
         [Cl.uint(vaultId), Cl.uint(50000000000)],
         wallet1
@@ -159,12 +159,12 @@ describe("Savings Vault Integration Tests", () => {
       // Create vault
       const depositAmount = 100000000000;
       simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "create-vault-with-deposit",
         [
           Cl.uint(depositAmount),
           Cl.uint(LOCK_30_DAYS),
-          Cl.principal(`${deployer}.arkadiko-yield-adapter`),
+          Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`),
           Cl.bool(false),
         ],
         wallet1
@@ -175,7 +175,7 @@ describe("Savings Vault Integration Tests", () => {
 
       // Early withdraw with penalty
       const withdrawResult = simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "early-withdraw",
         [Cl.uint(vaultId), Cl.uint(withdrawAmount)],
         wallet1
@@ -191,12 +191,12 @@ describe("Savings Vault Integration Tests", () => {
       // Create vault
       const depositAmount = 100000000000;
       simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "create-vault-with-deposit",
         [
           Cl.uint(depositAmount),
           Cl.uint(LOCK_7_DAYS),
-          Cl.principal(`${deployer}.arkadiko-yield-adapter`),
+          Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`),
           Cl.bool(false),
         ],
         wallet1
@@ -209,7 +209,7 @@ describe("Savings Vault Integration Tests", () => {
       const withdrawAmount = 50000000000;
 
       const withdrawResult = simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "withdraw",
         [Cl.uint(vaultId), Cl.uint(withdrawAmount)],
         wallet1
@@ -224,12 +224,12 @@ describe("Savings Vault Integration Tests", () => {
       // Create vault
       const depositAmount = 100000000000;
       simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "create-vault-with-deposit",
         [
           Cl.uint(depositAmount),
           Cl.uint(LOCK_30_DAYS),
-          Cl.principal(`${deployer}.arkadiko-yield-adapter`),
+          Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`),
           Cl.bool(false),
         ],
         wallet1
@@ -242,7 +242,7 @@ describe("Savings Vault Integration Tests", () => {
 
       // Harvest yield
       const harvestResult = simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "harvest-yield",
         [Cl.uint(vaultId)],
         wallet1
@@ -256,12 +256,12 @@ describe("Savings Vault Integration Tests", () => {
       // Create vault
       const depositAmount = 100000000000;
       simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "create-vault-with-deposit",
         [
           Cl.uint(depositAmount),
           Cl.uint(LOCK_90_DAYS),
-          Cl.principal(`${deployer}.arkadiko-yield-adapter`),
+          Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`),
           Cl.bool(false),
         ],
         wallet1
@@ -274,7 +274,7 @@ describe("Savings Vault Integration Tests", () => {
 
       // Harvest first
       simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "harvest-yield",
         [Cl.uint(vaultId)],
         wallet1
@@ -282,7 +282,7 @@ describe("Savings Vault Integration Tests", () => {
 
       // Then compound
       const compoundResult = simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "compound-yield",
         [Cl.uint(vaultId)],
         wallet1
@@ -297,12 +297,12 @@ describe("Savings Vault Integration Tests", () => {
       // Create perpetual vault
       const depositAmount = 100000000000;
       simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "create-vault-with-deposit",
         [
           Cl.uint(depositAmount),
           Cl.uint(LOCK_30_DAYS),
-          Cl.principal(`${deployer}.arkadiko-yield-adapter`),
+          Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`),
           Cl.bool(true), // perpetual
         ],
         wallet1
@@ -315,7 +315,7 @@ describe("Savings Vault Integration Tests", () => {
 
       // Renew vault
       const renewResult = simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "renew-perpetual-vault",
         [Cl.uint(vaultId)],
         wallet1
@@ -330,12 +330,12 @@ describe("Savings Vault Integration Tests", () => {
       // Create vault with wallet1
       const depositAmount = 100000000000;
       simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "create-vault-with-deposit",
         [
           Cl.uint(depositAmount),
           Cl.uint(LOCK_7_DAYS),
-          Cl.principal(`${deployer}.arkadiko-yield-adapter`),
+          Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`),
           Cl.bool(false),
         ],
         wallet1
@@ -348,7 +348,7 @@ describe("Savings Vault Integration Tests", () => {
 
       // Try to withdraw with wallet2
       const withdrawResult = simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "withdraw",
         [Cl.uint(vaultId), Cl.uint(50000000000)],
         wallet2
@@ -363,12 +363,12 @@ describe("Savings Vault Integration Tests", () => {
       // Create vault
       const depositAmount = 100000000000;
       simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "create-vault-with-deposit",
         [
           Cl.uint(depositAmount),
           Cl.uint(LOCK_30_DAYS),
-          Cl.principal(`${deployer}.arkadiko-yield-adapter`),
+          Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`),
           Cl.bool(false),
         ],
         wallet1
@@ -378,7 +378,7 @@ describe("Savings Vault Integration Tests", () => {
 
       // Get vault info
       const vaultInfo = simnet.callReadOnlyFn(
-        "vault-factory",
+        "vault-factory-v3",
         "get-vault-info",
         [Cl.uint(vaultId)],
         wallet1
@@ -391,24 +391,24 @@ describe("Savings Vault Integration Tests", () => {
     it("should track user vaults", () => {
       // Create multiple vaults
       simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "create-vault-with-deposit",
         [
           Cl.uint(100000000000),
           Cl.uint(LOCK_7_DAYS),
-          Cl.principal(`${deployer}.arkadiko-yield-adapter`),
+          Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`),
           Cl.bool(false),
         ],
         wallet1
       );
 
       simnet.callPublicFn(
-        "main-vault",
+        "main-vault-v3",
         "create-vault-with-deposit",
         [
           Cl.uint(200000000000),
           Cl.uint(LOCK_30_DAYS),
-          Cl.principal(`${deployer}.arkadiko-yield-adapter`),
+          Cl.principal(`${deployer}.arkadiko-yield-adapter-v3`),
           Cl.bool(true),
         ],
         wallet1
@@ -416,7 +416,7 @@ describe("Savings Vault Integration Tests", () => {
 
       // Get user vaults
       const userVaults = simnet.callReadOnlyFn(
-        "vault-factory",
+        "vault-factory-v3",
         "get-user-vaults",
         [Cl.principal(wallet1)],
         wallet1

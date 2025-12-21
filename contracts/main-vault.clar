@@ -38,7 +38,7 @@
 (define-public (authorize-time-lock-caller)
   (begin
     (asserts! (is-eq tx-sender contract-owner) err-unauthorized)
-    (contract-call? .time-lock add-authorized-caller .main-vault)
+    (contract-call? .time-lock-v3 add-authorized-caller .main-vault-v3)
   )
 )
 
@@ -52,13 +52,13 @@
 )
   (let
     (
-      (vault-id-response (try! (contract-call? .vault-factory create-vault initial-deposit lock-period adapter is-perpetual)))
+      (vault-id-response (try! (contract-call? .vault-factory-v3 create-vault initial-deposit lock-period adapter is-perpetual)))
     )
     ;; Transfer initial deposit to this contract
     (try! (contract-call? .mock-sbtc transfer initial-deposit tx-sender (as-contract tx-sender) none))
     
     ;; Allocate funds to adapter
-    (try! (contract-call? .auto-yield-engine allocate-to-adapter vault-id-response initial-deposit))
+    (try! (contract-call? .auto-yield-engine-v3 allocate-to-adapter vault-id-response initial-deposit))
     
     (ok vault-id-response)
   )
@@ -69,7 +69,7 @@
 (define-public (deposit (vault-id uint) (amount uint))
   (let
     (
-      (vault-info (unwrap! (contract-call? .vault-factory get-vault-info vault-id) err-vault-not-found))
+      (vault-info (unwrap! (contract-call? .vault-factory-v3 get-vault-info vault-id) err-vault-not-found))
       (vault-owner (get owner vault-info))
       (current-balance (get balance vault-info))
       (vault-status (get status vault-info))
@@ -84,10 +84,10 @@
     (try! (contract-call? .mock-sbtc transfer amount tx-sender (as-contract tx-sender) none))
     
     ;; Record deposit in vault-factory
-    (try! (contract-call? .vault-factory record-deposit vault-id amount))
+    (try! (contract-call? .vault-factory-v3 record-deposit vault-id amount))
     
     ;; Allocate to yield adapter via auto-yield-engine
-    (try! (contract-call? .auto-yield-engine allocate-to-adapter vault-id amount))
+    (try! (contract-call? .auto-yield-engine-v3 allocate-to-adapter vault-id amount))
     
     (print {
       event: "deposit",
@@ -107,11 +107,11 @@
 (define-public (withdraw (vault-id uint) (amount uint))
   (let
     (
-      (vault-info (unwrap! (contract-call? .vault-factory get-vault-info vault-id) err-vault-not-found))
+      (vault-info (unwrap! (contract-call? .vault-factory-v3 get-vault-info vault-id) err-vault-not-found))
       (vault-owner (get owner vault-info))
       (current-balance (get balance vault-info))
       (vault-status (get status vault-info))
-      (is-locked-result (unwrap! (contract-call? .time-lock is-locked vault-id) err-vault-not-found))
+      (is-locked-result (unwrap! (contract-call? .time-lock-v3 is-locked vault-id) err-vault-not-found))
     )
     ;; Validations
     (asserts! (not (var-get contract-paused)) err-unauthorized)
@@ -122,13 +122,13 @@
     (asserts! (>= current-balance amount) err-insufficient-balance)
     
     ;; Withdraw from yield adapter
-    (try! (contract-call? .auto-yield-engine withdraw-from-adapter vault-id amount))
+    (try! (contract-call? .auto-yield-engine-v3 withdraw-from-adapter vault-id amount))
     
     ;; Transfer tokens from this contract to user
     (try! (as-contract (contract-call? .mock-sbtc transfer amount tx-sender vault-owner none)))
     
     ;; Record withdrawal in vault-factory
-    (try! (contract-call? .vault-factory record-withdrawal vault-id amount))
+    (try! (contract-call? .vault-factory-v3 record-withdrawal vault-id amount))
     
     (print {
       event: "withdraw",
@@ -146,11 +146,11 @@
 (define-public (early-withdraw (vault-id uint) (amount uint))
   (let
     (
-      (vault-info (unwrap! (contract-call? .vault-factory get-vault-info vault-id) err-vault-not-found))
+      (vault-info (unwrap! (contract-call? .vault-factory-v3 get-vault-info vault-id) err-vault-not-found))
       (vault-owner (get owner vault-info))
       (current-balance (get balance vault-info))
       (vault-status (get status vault-info))
-      (penalty-info (unwrap! (contract-call? .time-lock apply-penalty vault-id amount) err-vault-not-found))
+      (penalty-info (unwrap! (contract-call? .time-lock-v3 apply-penalty vault-id amount) err-vault-not-found))
       (penalty-amount (get penalty penalty-info))
       (amount-after-penalty (get amount-after-penalty penalty-info))
     )
@@ -162,7 +162,7 @@
     (asserts! (>= current-balance amount) err-insufficient-balance)
     
     ;; Withdraw from yield adapter
-    (try! (contract-call? .auto-yield-engine withdraw-from-adapter vault-id amount))
+    (try! (contract-call? .auto-yield-engine-v3 withdraw-from-adapter vault-id amount))
     
     ;; Transfer tokens (minus penalty) to user
     (try! (as-contract (contract-call? .mock-sbtc transfer amount-after-penalty tx-sender vault-owner none)))
@@ -174,7 +174,7 @@
     )
     
     ;; Record withdrawal in vault-factory
-    (try! (contract-call? .vault-factory record-withdrawal vault-id amount))
+    (try! (contract-call? .vault-factory-v3 record-withdrawal vault-id amount))
     
     (print {
       event: "early-withdraw",
@@ -196,7 +196,7 @@
 (define-public (harvest-yield (vault-id uint))
   (let
     (
-      (vault-info (unwrap! (contract-call? .vault-factory get-vault-info vault-id) err-vault-not-found))
+      (vault-info (unwrap! (contract-call? .vault-factory-v3 get-vault-info vault-id) err-vault-not-found))
       (vault-owner (get owner vault-info))
     )
     ;; Validations
@@ -204,14 +204,14 @@
     (asserts! (or (is-eq tx-sender vault-owner) (is-eq tx-sender contract-owner)) err-unauthorized)
     
     ;; Harvest via auto-yield-engine
-    (contract-call? .auto-yield-engine harvest-yield vault-id)
+    (contract-call? .auto-yield-engine-v3 harvest-yield vault-id)
   )
 )
 
 (define-public (compound-yield (vault-id uint))
   (let
     (
-      (vault-info (unwrap! (contract-call? .vault-factory get-vault-info vault-id) err-vault-not-found))
+      (vault-info (unwrap! (contract-call? .vault-factory-v3 get-vault-info vault-id) err-vault-not-found))
       (vault-owner (get owner vault-info))
     )
     ;; Validations
@@ -219,7 +219,7 @@
     (asserts! (or (is-eq tx-sender vault-owner) (is-eq tx-sender contract-owner)) err-unauthorized)
     
     ;; Compound via auto-yield-engine
-    (contract-call? .auto-yield-engine compound-yield vault-id)
+    (contract-call? .auto-yield-engine-v3 compound-yield vault-id)
   )
 )
 
@@ -228,7 +228,7 @@
 (define-public (renew-perpetual-vault (vault-id uint))
   (let
     (
-      (vault-info (unwrap! (contract-call? .vault-factory get-vault-info vault-id) err-vault-not-found))
+      (vault-info (unwrap! (contract-call? .vault-factory-v3 get-vault-info vault-id) err-vault-not-found))
       (vault-owner (get owner vault-info))
       (is-perpetual (get is-perpetual vault-info))
     )
@@ -240,16 +240,16 @@
     ;; Check if lock has expired
     (let
       (
-        (is-expired (unwrap! (contract-call? .time-lock check-lock-expiry vault-id) err-vault-not-found))
+        (is-expired (unwrap! (contract-call? .time-lock-v3 check-lock-expiry vault-id) err-vault-not-found))
       )
       (asserts! is-expired err-still-locked)
       
       ;; Harvest and compound before renewing
-      (try! (contract-call? .auto-yield-engine harvest-yield vault-id))
-      (try! (contract-call? .auto-yield-engine compound-yield vault-id))
+      (try! (contract-call? .auto-yield-engine-v3 harvest-yield vault-id))
+      (try! (contract-call? .auto-yield-engine-v3 compound-yield vault-id))
       
       ;; Renew lock
-      (try! (contract-call? .time-lock renew-lock vault-id))
+      (try! (contract-call? .time-lock-v3 renew-lock vault-id))
       
       (print {
         event: "vault-renewed",
@@ -266,14 +266,14 @@
 ;; Read-only functions
 
 (define-read-only (get-vault-balance (vault-id uint))
-  (match (contract-call? .vault-factory get-vault-info vault-id)
+  (match (contract-call? .vault-factory-v3 get-vault-info vault-id)
     vault-info (ok (get balance vault-info))
     err-vault-not-found
   )
 )
 
 (define-read-only (get-vault-total-value (vault-id uint))
-  (match (contract-call? .vault-factory get-vault-info vault-id)
+  (match (contract-call? .vault-factory-v3 get-vault-info vault-id)
     vault-info
       (let
         (
@@ -287,7 +287,7 @@
 )
 
 (define-read-only (can-withdraw-now (vault-id uint))
-  (match (contract-call? .time-lock is-locked vault-id)
+  (match (contract-call? .time-lock-v3 is-locked vault-id)
     is-locked (ok (not is-locked))
     error-code (err error-code)
   )
@@ -296,21 +296,21 @@
 (define-read-only (get-withdrawal-info (vault-id uint) (amount uint))
   (let
     (
-      (vault-info (unwrap! (contract-call? .vault-factory get-vault-info vault-id) err-vault-not-found))
-      (is-locked-result (unwrap! (contract-call? .time-lock is-locked vault-id) err-vault-not-found))
+      (vault-info (unwrap! (contract-call? .vault-factory-v3 get-vault-info vault-id) err-vault-not-found))
+      (is-locked-result (unwrap! (contract-call? .time-lock-v3 is-locked vault-id) err-vault-not-found))
     )
     (if is-locked-result
       ;; Still locked, show penalty info
       (let
         (
-          (penalty-info (unwrap! (contract-call? .time-lock apply-penalty vault-id amount) err-vault-not-found))
+          (penalty-info (unwrap! (contract-call? .time-lock-v3 apply-penalty vault-id amount) err-vault-not-found))
         )
         (ok {
           can-withdraw: false,
           requires-penalty: true,
           penalty: (get penalty penalty-info),
           amount-after-penalty: (get amount-after-penalty penalty-info),
-          blocks-until-unlock: (unwrap! (contract-call? .time-lock blocks-until-unlock vault-id) err-vault-not-found)
+          blocks-until-unlock: (unwrap! (contract-call? .time-lock-v3 blocks-until-unlock vault-id) err-vault-not-found)
         })
       )
       ;; Lock expired, no penalty
