@@ -40,6 +40,17 @@ describe("Savings Vault", () => {
     expect(result.result).toBeOk(Cl.uint(1));
   });
 
+  it("rejects deposits below the minimum", () => {
+    const result = simnet.callPublicFn(
+      "savings-vault",
+      "create-vault",
+      [Cl.uint(0), Cl.uint(LOCK_30_DAYS)],
+      wallet1
+    );
+
+    expect(result.result).toBeErr(Cl.uint(101));
+  });
+
   it("creates a vault using a preset lock period", () => {
     const result = simnet.callPublicFn(
       "savings-vault",
