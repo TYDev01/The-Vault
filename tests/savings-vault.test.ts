@@ -138,6 +138,31 @@ describe("Savings Vault", () => {
     expect(depositResult.result).toBeOk(Cl.bool(true));
   });
 
+  it("tracks user vault ids", () => {
+    simnet.callPublicFn(
+      "savings-vault",
+      "create-vault",
+      [Cl.uint(100000000000), Cl.uint(LOCK_7_DAYS)],
+      wallet1
+    );
+
+    simnet.callPublicFn(
+      "savings-vault",
+      "create-vault",
+      [Cl.uint(200000000000), Cl.uint(LOCK_30_DAYS)],
+      wallet1
+    );
+
+    const vaults = simnet.callReadOnlyFn(
+      "savings-vault",
+      "get-user-vaults",
+      [Cl.principal(wallet1)],
+      wallet1
+    );
+
+    expect(vaults.result).toBeList([Cl.uint(1), Cl.uint(2)]);
+  });
+
   it("blocks withdrawals before lock expiry", () => {
     simnet.callPublicFn(
       "savings-vault",
