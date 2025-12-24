@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { connect, disconnect, getLocalStorage, isConnected, request } from "@stacks/connect";
+import { getStacksAddresses, getUniversalConnector, openWalletConnectModal } from "./lib/reown";
 
 type ChainhookStatus = "idle" | "checking" | "ok" | "error";
+type WalletSession = {
+  namespaces?: Record<string, { accounts?: string[] }>;
+  peer?: { name?: string };
+};
 
 export default function Home() {
   const [status, setStatus] = useState<ChainhookStatus>("idle");
@@ -22,6 +26,8 @@ export default function Home() {
     provider?: string;
   }>({ connected: false });
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [connectorReady, setConnectorReady] = useState(false);
+  const [walletSession, setWalletSession] = useState<WalletSession | null>(null);
   const parsedAmount = Number(amount.replace(/,/g, ""));
   const estimatedPenalty = Number.isFinite(parsedAmount) ? Math.round(parsedAmount * 0.08) : null;
   const vaults = [
@@ -45,14 +51,26 @@ export default function Home() {
     activeFilter === "All" ? activity : activity.filter((item) => item.type === activeFilter);
 
   useEffect(() => {
-    const stored = getLocalStorage();
-    if (stored?.addresses) {
-      setWalletState({
-        connected: true,
-        stxAddress: stored.addresses.stx?.[0]?.address,
-        btcAddress: stored.addresses.btc?.[0]?.address
-      });
-    }
+    let active = true;
+    const initConnector = async () => {
+      try {
+        const connector = await getUniversalConnector();
+        if (!active) {
+          return;
+        }
+        setConnectorReady(true);
+        if (connector.session) {
+          setWalletSession(connector.session as WalletSession);
+        }
+      } catch (error) {
+        if (active) {
+          setWalletError("Unable to initialize Reown WalletConnect.");
+        }
+      }
+    };
+
+    initConnector();
+
     const loadActivity = async () => {
       setActivityState("loading");
       try {
@@ -71,7 +89,27 @@ export default function Home() {
       }
     };
     loadActivity();
+    return () => {
+      active = false;
+    };
   }, []);
+
+  useEffect(() => {
+    if (!walletSession) {
+      setWalletState({ connected: false });
+      return;
+    }
+    const namespaces = walletSession.namespaces ?? {};
+    const account = Object.values(namespaces)
+      .flatMap((namespace) => namespace.accounts ?? [])
+      .map((entry) => entry.split(":")[2] ?? entry)
+      .find(Boolean);
+    setWalletState({
+      connected: true,
+      stxAddress: account,
+      provider: walletSession.peer?.name ?? "Reown WalletConnect"
+    });
+  }, [walletSession]);
 
   const handlePlaceholderAction = (message: string) => {
     setActionMessage(message);
@@ -81,45 +119,64 @@ export default function Home() {
   const handleConnectWallet = async () => {
     setWalletError(null);
     try {
-      if (isConnected()) {
+      if (!connectorReady) {
+        setWalletError("Wallet connector is still loading.");
+        return;
+      }
+      if (walletSession) {
         setActionMessage("Already connected");
         return;
       }
-      const response = await connect({
-        forceWalletSelect: true,
-        approvedProviderIds: ["LeatherProvider", "XverseProviders.BitcoinProvider"]
-      });
-      setWalletState({
-        connected: true,
-        stxAddress: response.addresses?.stx?.[0]?.address,
-        btcAddress: response.addresses?.btc?.[0]?.address,
-        provider: "Stacks Connect"
-      });
+      const { connector, session } = (await openWalletConnectModal()) as {
+        connector: ReturnType<typeof getUniversalConnector> extends Promise<infer T> ? T : never;
+        session?: WalletSession;
+      };
+      setWalletSession(session ?? null);
+      const addresses = await getStacksAddresses();
+      if (addresses[0]) {
+        setWalletState((prev) => ({
+          ...prev,
+          connected: true,
+          stxAddress: addresses[0],
+          provider: session?.peer?.name ?? "Reown WalletConnect"
+        }));
+      }
       setActionMessage("Wallet connected");
     } catch (error) {
-      setWalletError("Unable to connect wallet. Install Hiro/Leather or Xverse and try again.");
+      setWalletError("Unable to connect wallet. Try again or check your WalletConnect app.");
     }
   };
 
-  const handleDisconnectWallet = () => {
-    disconnect();
-    setWalletState({ connected: false });
+  const handleDisconnectWallet = async () => {
+    try {
+      const connector = await getUniversalConnector();
+      await connector.disconnect();
+    } catch (error) {
+      setWalletError("Unable to disconnect wallet.");
+    }
+    setWalletSession(null);
     setActionMessage("Wallet disconnected");
   };
 
   const handleRefreshAccount = async () => {
     setWalletError(null);
     try {
-      const accounts = await request("stx_getAccounts");
-      const account = accounts.addresses?.[0];
-      if (account?.address) {
+      const connector = await getUniversalConnector();
+      const session = (connector.session ?? null) as WalletSession | null;
+      if (!session) {
+        setWalletError("No active wallet session.");
+        return;
+      }
+      setWalletSession(session);
+      const addresses = await getStacksAddresses();
+      if (addresses[0]) {
         setWalletState((prev) => ({
           ...prev,
           connected: true,
-          stxAddress: account.address
+          stxAddress: addresses[0]
         }));
-        setActionMessage("Account refreshed");
       }
+      setActionMessage("Account refreshed");
     } catch (error) {
       setWalletError("Unable to refresh account.");
     }
