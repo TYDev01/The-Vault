@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getUniversalConnector } from "./lib/reown";
+import { getStacksAddresses, getUniversalConnector, openWalletConnectModal } from "./lib/reown";
 
 type ChainhookStatus = "idle" | "checking" | "ok" | "error";
 type WalletSession = {
@@ -127,9 +127,20 @@ export default function Home() {
         setActionMessage("Already connected");
         return;
       }
-      const connector = await getUniversalConnector();
-      const session = (await connector.connect()) as WalletSession;
+      const { connector, session } = (await openWalletConnectModal()) as {
+        connector: ReturnType<typeof getUniversalConnector> extends Promise<infer T> ? T : never;
+        session?: WalletSession;
+      };
       setWalletSession(session ?? null);
+      const addresses = await getStacksAddresses();
+      if (addresses[0]) {
+        setWalletState((prev) => ({
+          ...prev,
+          connected: true,
+          stxAddress: addresses[0],
+          provider: session?.peer?.name ?? "Reown WalletConnect"
+        }));
+      }
       setActionMessage("Wallet connected");
     } catch (error) {
       setWalletError("Unable to connect wallet. Try again or check your WalletConnect app.");
@@ -152,12 +163,20 @@ export default function Home() {
     try {
       const connector = await getUniversalConnector();
       const session = (connector.session ?? null) as WalletSession | null;
-      if (session) {
-        setWalletSession(session);
-        setActionMessage("Account refreshed");
+      if (!session) {
+        setWalletError("No active wallet session.");
         return;
       }
-      setWalletError("No active wallet session.");
+      setWalletSession(session);
+      const addresses = await getStacksAddresses();
+      if (addresses[0]) {
+        setWalletState((prev) => ({
+          ...prev,
+          connected: true,
+          stxAddress: addresses[0]
+        }));
+      }
+      setActionMessage("Account refreshed");
     } catch (error) {
       setWalletError("Unable to refresh account.");
     }
