@@ -41,6 +41,11 @@ export default function Home() {
   const [lastVaultTx, setLastVaultTx] = useState<string | null>(null);
   const parsedAmount = Number(amount.replace(/,/g, ""));
   const estimatedPenalty = Number.isFinite(parsedAmount) ? Math.round(parsedAmount * 0.08) : null;
+  const parsedDuration = Number(duration);
+  const estimatedUnlock =
+    Number.isFinite(parsedDuration) && parsedDuration > 0
+      ? new Date(Date.now() + parsedDuration * 24 * 60 * 60 * 1000).toLocaleDateString()
+      : null;
   const [vaults, setVaults] = useState([
     { name: "Focus Fund", amount: 8200, unlock: "90 days", status: "On track" },
     { name: "Voyage Buffer", amount: 3450, unlock: "21 days", status: "Near unlock" },
@@ -449,6 +454,10 @@ export default function Home() {
             <p className="card-value">
               {estimatedPenalty === null ? "--" : `${estimatedPenalty.toLocaleString()} STX`}
             </p>
+          </div>
+          <div className="summary">
+            <p className="card-kicker">Estimated unlock</p>
+            <p className="card-value">{estimatedUnlock ?? "--"}</p>
           </div>
         </div>
       </section>
