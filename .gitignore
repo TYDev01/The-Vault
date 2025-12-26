@@ -16,3 +16,4 @@ ARCHITECTURE.md
 scripts
 deployments
 .env
+frontend/.env.local
