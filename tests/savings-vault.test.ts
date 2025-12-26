@@ -282,7 +282,7 @@ describe("Savings Vault", () => {
     const rescueWhileActive = simnet.callPublicFn(
       "savings-vault",
       "rescue-token",
-      [Cl.principal(`${deployer}.mock-sbtc`), Cl.uint(1), Cl.principal(wallet1)],
+      [Cl.uint(1), Cl.principal(wallet1)],
       deployer
     );
 
@@ -307,7 +307,7 @@ describe("Savings Vault", () => {
     const rescueResult = simnet.callPublicFn(
       "savings-vault",
       "rescue-token",
-      [Cl.principal(`${deployer}.mock-sbtc`), Cl.uint(1000), Cl.principal(wallet2)],
+      [Cl.uint(1000), Cl.principal(wallet2)],
       deployer
     );
 

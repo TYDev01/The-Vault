@@ -11,8 +11,6 @@
 (define-constant err-invalid-penalty (err u407))
 
 (define-constant contract-owner tx-sender)
-(use-trait sip-010-trait .sip-010-trait.sip-010-trait)
-(define-constant token-contract .mock-sbtc)
 (define-constant basis-points u10000)
 
 ;; Config
@@ -69,12 +67,12 @@
 )
 
 ;; Emergency rescue for accidental token transfers (owner-only, paused)
-(define-public (rescue-token (token <sip-010-trait>) (amount uint) (recipient principal))
+(define-public (rescue-token (amount uint) (recipient principal))
   (begin
     (asserts! (is-eq tx-sender contract-owner) err-unauthorized)
     (asserts! (var-get contract-paused) err-paused)
     (asserts! (> amount u0) err-invalid-amount)
-    (as-contract (contract-call? token transfer amount tx-sender recipient none))
+    (as-contract (contract-call? .mock-sbtc transfer amount tx-sender recipient none))
   )
 )
 
@@ -113,7 +111,7 @@
         (vault-id (+ (var-get vault-nonce) u1))
         (lock-until (+ block-height lock-period))
       )
-      (try! (contract-call? <sip-010-trait> token-contract transfer initial-deposit tx-sender (as-contract tx-sender) none))
+      (try! (contract-call? .mock-sbtc transfer initial-deposit tx-sender (as-contract tx-sender) none))
       (map-set vaults vault-id {
         owner: tx-sender,
         balance: initial-deposit,
@@ -153,7 +151,7 @@
     (asserts! (is-eq tx-sender owner) err-unauthorized)
     (asserts! (is-eq status "active") err-unauthorized)
     (asserts! (>= amount (var-get min-deposit)) err-invalid-amount)
-    (try! (contract-call? <sip-010-trait> token-contract transfer amount tx-sender (as-contract tx-sender) none))
+    (try! (contract-call? .mock-sbtc transfer amount tx-sender (as-contract tx-sender) none))
     (map-set vaults vault-id (merge vault { balance: (+ balance amount) }))
     (print {event: "deposit", vault-id: vault-id, amount: amount, new-balance: (+ balance amount), owner: owner})
     (ok true)
@@ -175,7 +173,7 @@
     (asserts! (> amount u0) err-invalid-amount)
     (asserts! (>= block-height lock-until) err-still-locked)
     (asserts! (>= balance amount) err-insufficient-balance)
-    (try! (as-contract (contract-call? <sip-010-trait> token-contract transfer amount tx-sender owner none)))
+    (try! (as-contract (contract-call? .mock-sbtc transfer amount tx-sender owner none)))
     (map-set vaults vault-id (merge vault { balance: (- balance amount) }))
     (print {event: "withdraw", vault-id: vault-id, amount: amount, new-balance: (- balance amount), owner: owner})
     (ok true)
@@ -197,7 +195,7 @@
     (asserts! (> amount u0) err-invalid-amount)
     (asserts! (>= block-height lock-until) err-still-locked)
     (asserts! (>= balance amount) err-insufficient-balance)
-    (try! (as-contract (contract-call? <sip-010-trait> token-contract transfer amount tx-sender owner none)))
+    (try! (as-contract (contract-call? .mock-sbtc transfer amount tx-sender owner none)))
     (map-set vaults vault-id (merge vault { balance: (- balance amount) }))
     (print {event: "emergency-withdraw", vault-id: vault-id, amount: amount, new-balance: (- balance amount), owner: owner})
     (ok true)
@@ -223,9 +221,9 @@
     (asserts! (> amount u0) err-invalid-amount)
     (asserts! (>= amount penalty) err-invalid-amount)
     (asserts! (>= balance amount) err-insufficient-balance)
-    (try! (as-contract (contract-call? <sip-010-trait> token-contract transfer received tx-sender owner none)))
+    (try! (as-contract (contract-call? .mock-sbtc transfer received tx-sender owner none)))
     (if (> penalty u0)
-      (try! (as-contract (contract-call? <sip-010-trait> token-contract transfer penalty tx-sender contract-owner none)))
+      (try! (as-contract (contract-call? .mock-sbtc transfer penalty tx-sender contract-owner none)))
       true
     )
     (map-set vaults vault-id (merge vault { balance: (- balance amount) }))
