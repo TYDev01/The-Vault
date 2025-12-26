@@ -61,6 +61,20 @@ export default function Home() {
   const visibleActivity =
     activeFilter === "All" ? activity : activity.filter((item) => item.type === activeFilter);
 
+  const formatAmountInput = (value: string) => {
+    const digits = value.replace(/[^\d]/g, "");
+    if (!digits) {
+      return "";
+    }
+    const asNumber = Number(digits);
+    if (!Number.isFinite(asNumber)) {
+      return "";
+    }
+    return asNumber.toLocaleString();
+  };
+
+  const formatDurationInput = (value: string) => value.replace(/[^\d]/g, "");
+
   useEffect(() => {
     let active = true;
     const initConnector = async () => {
@@ -388,13 +402,13 @@ export default function Home() {
             className="input"
             placeholder="Amount (STX)"
             value={amount}
-            onChange={(event) => setAmount(event.target.value)}
+            onChange={(event) => setAmount(formatAmountInput(event.target.value))}
           />
           <input
             className="input"
             placeholder="Lock duration (days)"
             value={duration}
-            onChange={(event) => setDuration(event.target.value)}
+            onChange={(event) => setDuration(formatDurationInput(event.target.value))}
           />
           <input
             className="input"
