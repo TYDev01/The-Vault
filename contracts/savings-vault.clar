@@ -11,6 +11,7 @@
 (define-constant err-invalid-penalty (err u407))
 
 (define-constant contract-owner tx-sender)
+(use-trait sip-010-trait .sip-010-trait.sip-010-trait)
 (define-constant token-contract .mock-sbtc)
 (define-constant basis-points u10000)
 
@@ -68,7 +69,7 @@
 )
 
 ;; Emergency rescue for accidental token transfers (owner-only, paused)
-(define-public (rescue-token (token principal) (amount uint) (recipient principal))
+(define-public (rescue-token (token <sip-010-trait>) (amount uint) (recipient principal))
   (begin
     (asserts! (is-eq tx-sender contract-owner) err-unauthorized)
     (asserts! (var-get contract-paused) err-paused)
