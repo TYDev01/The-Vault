@@ -37,6 +37,8 @@ export default function Home() {
   const [walletError, setWalletError] = useState<string | null>(null);
   const [connectorReady, setConnectorReady] = useState(false);
   const [walletSession, setWalletSession] = useState<WalletSession | null>(null);
+  const [vaultSubmitting, setVaultSubmitting] = useState(false);
+  const [lastVaultTx, setLastVaultTx] = useState<string | null>(null);
   const parsedAmount = Number(amount.replace(/,/g, ""));
   const estimatedPenalty = Number.isFinite(parsedAmount) ? Math.round(parsedAmount * 0.08) : null;
   const [vaults, setVaults] = useState([
@@ -193,12 +195,16 @@ export default function Home() {
 
   const handleCreateVault = async () => {
     setWalletError(null);
+    setLastVaultTx(null);
     if (!vaultContractAddress) {
       setWalletError("Missing vault contract address. Set NEXT_PUBLIC_VAULT_CONTRACT_ADDRESS.");
       return;
     }
     if (!amount || !duration) {
       setWalletError("Enter an amount and lock duration.");
+      return;
+    }
+    if (vaultSubmitting) {
       return;
     }
     const parsedDays = Number(duration);
@@ -212,6 +218,7 @@ export default function Home() {
       return;
     }
     try {
+      setVaultSubmitting(true);
       if (!walletSession) {
         await handleConnectWallet();
       }
@@ -225,8 +232,11 @@ export default function Home() {
         functionArgs: [cvToHex(uintCV(initialDeposit)), cvToHex(uintCV(lockPeriod))],
         network: vaultNetwork
       });
-      if (response.result) {
+      const txResult = response.result as { txid?: string } | string | undefined;
+      const txid = typeof txResult === "string" ? txResult : txResult?.txid;
+      if (txid || response.result) {
         setActionMessage("Vault creation submitted");
+        setLastVaultTx(txid ?? null);
         setVaults((prev) => [
           ...prev,
           {
@@ -243,6 +253,8 @@ export default function Home() {
       }
     } catch (error) {
       setWalletError("Unable to submit vault creation.");
+    } finally {
+      setVaultSubmitting(false);
     }
   };
 
@@ -403,8 +415,9 @@ export default function Home() {
             className="pill primary"
             type="button"
             onClick={handleCreateVault}
+            disabled={vaultSubmitting}
           >
-            Save vault plan
+            {vaultSubmitting ? "Submitting..." : "Save vault plan"}
           </button>
           <button className="pill" type="button" onClick={handleCheckStatus}>
             Check Chainhooks API
@@ -525,6 +538,7 @@ export default function Home() {
             ))}
         </div>
       </section>
+      {lastVaultTx && <div className="toast">Vault tx: {lastVaultTx.slice(0, 10)}...</div>}
       {actionMessage && <div className="toast">{actionMessage}</div>}
       {walletError && <div className="toast">{walletError}</div>}
     </main>
