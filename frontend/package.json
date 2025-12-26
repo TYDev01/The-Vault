@@ -13,6 +13,7 @@
     "@hirosystems/chainhooks-client": "^1.0.0",
     "@reown/appkit-common": "^1.6.2",
     "@reown/appkit-universal-connector": "^1.6.2",
+    "@stacks/transactions": "^7.2.0",
     "next": "14.2.5",
     "react": "18.3.1",
     "react-dom": "18.3.1",

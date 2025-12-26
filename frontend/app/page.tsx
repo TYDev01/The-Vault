@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getStacksAddresses, getUniversalConnector, openWalletConnectModal } from "./lib/reown";
+import { cvToHex, uintCV } from "@stacks/transactions";
+import {
+  callStacksContract,
+  getStacksAddresses,
+  getUniversalConnector,
+  openWalletConnectModal
+} from "./lib/reown";
 
 type ChainhookStatus = "idle" | "checking" | "ok" | "error";
 type WalletSession = {
@@ -10,6 +16,9 @@ type WalletSession = {
 };
 
 export default function Home() {
+  const vaultContractAddress = process.env.NEXT_PUBLIC_VAULT_CONTRACT_ADDRESS ?? "";
+  const vaultContractName = process.env.NEXT_PUBLIC_VAULT_CONTRACT_NAME ?? "savings-vault";
+  const vaultNetwork = (process.env.NEXT_PUBLIC_VAULT_NETWORK as "mainnet" | "testnet" | undefined) ?? "testnet";
   const [status, setStatus] = useState<ChainhookStatus>("idle");
   const [statusNote, setStatusNote] = useState("Not checked");
   const [lastChecked, setLastChecked] = useState<string | null>(null);
@@ -30,11 +39,11 @@ export default function Home() {
   const [walletSession, setWalletSession] = useState<WalletSession | null>(null);
   const parsedAmount = Number(amount.replace(/,/g, ""));
   const estimatedPenalty = Number.isFinite(parsedAmount) ? Math.round(parsedAmount * 0.08) : null;
-  const vaults = [
+  const [vaults, setVaults] = useState([
     { name: "Focus Fund", amount: 8200, unlock: "90 days", status: "On track" },
     { name: "Voyage Buffer", amount: 3450, unlock: "21 days", status: "Near unlock" },
     { name: "Launch Reserve", amount: 12000, unlock: "180 days", status: "Locked" }
-  ];
+  ]);
   const totalLocked = vaults.reduce((sum, vault) => sum + vault.amount, 0);
   const vaultStatuses = ["All", "On track", "Near unlock", "Locked"];
   const [vaultFilter, setVaultFilter] = useState("All");
@@ -179,6 +188,61 @@ export default function Home() {
       setActionMessage("Account refreshed");
     } catch (error) {
       setWalletError("Unable to refresh account.");
+    }
+  };
+
+  const handleCreateVault = async () => {
+    setWalletError(null);
+    if (!vaultContractAddress) {
+      setWalletError("Missing vault contract address. Set NEXT_PUBLIC_VAULT_CONTRACT_ADDRESS.");
+      return;
+    }
+    if (!amount || !duration) {
+      setWalletError("Enter an amount and lock duration.");
+      return;
+    }
+    const parsedDays = Number(duration);
+    if (!Number.isFinite(parsedDays) || parsedDays <= 0) {
+      setWalletError("Lock duration must be a positive number of days.");
+      return;
+    }
+    const parsedDeposit = Number(amount.replace(/,/g, ""));
+    if (!Number.isFinite(parsedDeposit) || parsedDeposit <= 0) {
+      setWalletError("Amount must be a positive number.");
+      return;
+    }
+    try {
+      if (!walletSession) {
+        await handleConnectWallet();
+      }
+      const blocksPerDay = 144;
+      const lockPeriod = BigInt(Math.round(parsedDays * blocksPerDay));
+      const initialDeposit = BigInt(Math.round(parsedDeposit * 1e6));
+      const response = await callStacksContract({
+        contractAddress: vaultContractAddress,
+        contractName: vaultContractName,
+        functionName: "create-vault",
+        functionArgs: [cvToHex(uintCV(initialDeposit)), cvToHex(uintCV(lockPeriod))],
+        network: vaultNetwork
+      });
+      if (response.result) {
+        setActionMessage("Vault creation submitted");
+        setVaults((prev) => [
+          ...prev,
+          {
+            name: label || "New vault",
+            amount: Math.round(parsedDeposit),
+            unlock: `${parsedDays} days`,
+            status: "Locked"
+          }
+        ]);
+        setLabel("");
+        setAmount("");
+      } else {
+        setWalletError("Vault creation rejected.");
+      }
+    } catch (error) {
+      setWalletError("Unable to submit vault creation.");
     }
   };
 
@@ -338,7 +402,7 @@ export default function Home() {
           <button
             className="pill primary"
             type="button"
-            onClick={() => handlePlaceholderAction("Vault plan saved (stub)")}
+            onClick={handleCreateVault}
           >
             Save vault plan
           </button>
