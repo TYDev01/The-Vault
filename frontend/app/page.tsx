@@ -46,6 +46,15 @@ export default function Home() {
     Number.isFinite(parsedDuration) && parsedDuration > 0
       ? new Date(Date.now() + parsedDuration * 24 * 60 * 60 * 1000).toLocaleDateString()
       : null;
+  const canSubmitVault =
+    !vaultSubmitting &&
+    Boolean(vaultContractAddress) &&
+    Boolean(amount) &&
+    Boolean(duration) &&
+    Number.isFinite(parsedAmount) &&
+    parsedAmount > 0 &&
+    Number.isFinite(parsedDuration) &&
+    parsedDuration > 0;
   const [vaults, setVaults] = useState([
     { name: "Focus Fund", amount: 8200, unlock: "90 days", status: "On track" },
     { name: "Voyage Buffer", amount: 3450, unlock: "21 days", status: "Near unlock" },
@@ -401,6 +410,10 @@ export default function Home() {
             <span className={`status-dot ${status === "ok" ? "ok" : status === "error" ? "error" : ""}`} />
             {statusNote}
           </p>
+          <p className="status">
+            Contract: {vaultContractAddress ? `${vaultContractAddress}.${vaultContractName}` : "Not configured"} (
+            {vaultNetwork})
+          </p>
         </div>
         <div className="builder-row">
           <input
@@ -439,7 +452,7 @@ export default function Home() {
             className="pill primary"
             type="button"
             onClick={handleCreateVault}
-            disabled={vaultSubmitting}
+            disabled={!canSubmitVault}
           >
             {vaultSubmitting ? "Submitting..." : "Save vault plan"}
           </button>
