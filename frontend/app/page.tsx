@@ -93,6 +93,8 @@ export default function Home() {
     vaultNetwork === "mainnet" ? "https://explorer.hiro.so/txid/" : "https://explorer.hiro.so/txid/";
   const explorerSuffix = vaultNetwork === "mainnet" ? "" : "?chain=testnet";
   const getExplorerUrl = (txid: string) => `${explorerBaseUrl}${txid}${explorerSuffix}`;
+  const formatAddress = (address?: string) =>
+    address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Not connected";
 
   useEffect(() => {
     let active = true;
@@ -423,6 +425,12 @@ export default function Home() {
           <p className="status">
             Contract: {vaultContractAddress ? `${vaultContractAddress}.${vaultContractName}` : "Not configured"} (
             {vaultNetwork})
+          </p>
+          <p className="status">
+            Wallet:{" "}
+            {connectorReady
+              ? `${formatAddress(walletState.stxAddress)}${walletState.provider ? ` (${walletState.provider})` : ""}`
+              : "Connecting..."}
           </p>
         </div>
         <div className="builder-row">
