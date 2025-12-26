@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cvToHex, stringAsciiCV, uintCV } from "@stacks/transactions";
 import {
   callStacksContract,
@@ -16,6 +16,7 @@ type WalletSession = {
 };
 
 export default function Home() {
+  const builderRef = useRef<HTMLElement | null>(null);
   const vaultContractAddress = process.env.NEXT_PUBLIC_VAULT_CONTRACT_ADDRESS ?? "";
   const vaultContractName = process.env.NEXT_PUBLIC_VAULT_CONTRACT_NAME ?? "savings-vault";
   const vaultNetwork = (process.env.NEXT_PUBLIC_VAULT_NETWORK as "mainnet" | "testnet" | undefined) ?? "testnet";
@@ -155,6 +156,10 @@ export default function Home() {
     window.setTimeout(() => setActionMessage(null), 2400);
   };
 
+  const handleJumpToBuilder = () => {
+    builderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const handleConnectWallet = async () => {
     setWalletError(null);
     try {
@@ -273,7 +278,7 @@ export default function Home() {
         setVaults((prev) => [
           ...prev,
           {
-            name: label || "New vault",
+            name: label || `Vault ${prev.length + 1}`,
             amount: Math.round(parsedDeposit),
             unlock: `${parsedDays} days`,
             status: "Locked"
@@ -281,6 +286,7 @@ export default function Home() {
         ]);
         setLabel("");
         setAmount("");
+        setDuration("");
       } else {
         setWalletError("Vault creation rejected.");
       }
@@ -349,7 +355,7 @@ export default function Home() {
             <button
               className="pill primary"
               type="button"
-              onClick={() => handlePlaceholderAction("Vault creation flow coming soon")}
+              onClick={handleJumpToBuilder}
             >
               Create vault
             </button>
@@ -402,7 +408,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="builder reveal">
+      <section className="builder reveal" ref={builderRef}>
         <div>
           <p className="label">Vault builder</p>
           <h2 className="section-title">Model your next savings vault.</h2>
