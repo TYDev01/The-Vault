@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cvToHex, uintCV } from "@stacks/transactions";
+import { cvToHex, stringAsciiCV, uintCV } from "@stacks/transactions";
 import {
   callStacksContract,
   getStacksAddresses,
@@ -223,13 +223,18 @@ export default function Home() {
         await handleConnectWallet();
       }
       const blocksPerDay = 144;
-      const lockPeriod = BigInt(Math.round(parsedDays * blocksPerDay));
       const initialDeposit = BigInt(Math.round(parsedDeposit * 1e6));
+      const presetMap: Record<number, string> = { 7: "7d", 30: "30d", 90: "90d", 180: "180d" };
+      const preset = presetMap[Math.round(parsedDays)];
+      const functionName = preset ? "create-vault-preset" : "create-vault";
+      const functionArgs = preset
+        ? [cvToHex(uintCV(initialDeposit)), cvToHex(stringAsciiCV(preset))]
+        : [cvToHex(uintCV(initialDeposit)), cvToHex(uintCV(BigInt(Math.round(parsedDays * blocksPerDay))))];
       const response = await callStacksContract({
         contractAddress: vaultContractAddress,
         contractName: vaultContractName,
-        functionName: "create-vault",
-        functionArgs: [cvToHex(uintCV(initialDeposit)), cvToHex(uintCV(lockPeriod))],
+        functionName,
+        functionArgs,
         network: vaultNetwork
       });
       const txResult = response.result as { txid?: string } | string | undefined;
