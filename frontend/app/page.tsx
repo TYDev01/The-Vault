@@ -89,6 +89,10 @@ export default function Home() {
   };
 
   const formatDurationInput = (value: string) => value.replace(/[^\d]/g, "");
+  const explorerBaseUrl =
+    vaultNetwork === "mainnet" ? "https://explorer.hiro.so/txid/" : "https://explorer.hiro.so/txid/";
+  const explorerSuffix = vaultNetwork === "mainnet" ? "" : "?chain=testnet";
+  const getExplorerUrl = (txid: string) => `${explorerBaseUrl}${txid}${explorerSuffix}`;
 
   useEffect(() => {
     let active = true;
@@ -585,7 +589,15 @@ export default function Home() {
             ))}
         </div>
       </section>
-      {lastVaultTx && <div className="toast">Vault tx: {lastVaultTx.slice(0, 10)}...</div>}
+      {lastVaultTx && (
+        <div className="toast">
+          Vault tx: {lastVaultTx.slice(0, 10)}...
+          {" "}
+          <a href={getExplorerUrl(lastVaultTx)} target="_blank" rel="noreferrer">
+            View
+          </a>
+        </div>
+      )}
       {actionMessage && <div className="toast">{actionMessage}</div>}
       {walletError && <div className="toast">{walletError}</div>}
     </main>

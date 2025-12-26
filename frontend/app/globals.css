@@ -424,6 +424,16 @@ img {
   z-index: 40;
 }
 
+.toast a {
+  color: #fff8ef;
+  text-decoration: underline;
+  margin-left: 6px;
+}
+
+.toast a:hover {
+  color: #ffd2a8;
+}
+
 
 
 @media (max-width: 720px) {
